@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Dashboard() {
+  const { workspace } = useAuth()
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState(null)
 
   async function loadSampleData() {
     setBusy(true)
     setMessage(null)
-    const { error } = await supabase.rpc('seed_sample_data')
+    const { error } = await supabase.rpc('seed_sample_data', { p_workspace_id: workspace?.id })
     setBusy(false)
     setMessage(error ? error.message : 'Sample data loaded — switch to the Matrix tab to see it.')
   }
@@ -16,7 +18,7 @@ export default function Dashboard() {
   async function clearSampleData() {
     setBusy(true)
     setMessage(null)
-    const { error } = await supabase.rpc('clear_sample_data')
+    const { error } = await supabase.rpc('clear_sample_data', { p_workspace_id: workspace?.id })
     setBusy(false)
     setMessage(error ? error.message : 'Sample data cleared.')
   }

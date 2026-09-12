@@ -60,6 +60,27 @@
   color: var(--sm-navy-text-dim);
 }
 
+.workspace-switcher {
+  margin-top: 2px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sm-navy-text-dim);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 5px;
+  padding: 2px 4px;
+  max-width: 180px;
+}
+
+.workspace-switcher option {
+  color: var(--sm-text);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .app-nav {
   display: flex;
   gap: 4px;

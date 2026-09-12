@@ -5,7 +5,9 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AppLayout from './pages/AppLayout'
 import Matrix from './pages/Matrix'
+import Team from './pages/Team'
 import Dashboard from './pages/Dashboard'
+import AcceptInvite from './pages/AcceptInvite'
 import './App.css'
 
 function Home() {
@@ -20,6 +22,7 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/invite/:token" element={<AcceptInvite />} />
       <Route
         path="/app"
         element={
@@ -29,6 +32,7 @@ function App() {
         }
       >
         <Route index element={<Matrix />} />
+        <Route path="team" element={<Team />} />
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

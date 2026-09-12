@@ -1,32 +1,64 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(undefined)
 
-// The workspace row is auto-created by a database trigger the moment someone
-// signs up (see 001_initial_schema.sql), so we just fetch it — no RPC needed.
-async function fetchWorkspace(currentSession) {
-  if (!currentSession) return null
+const LAST_WORKSPACE_KEY = 'skillmatrix.workspaceId'
 
-  const { data, error } = await supabase
-    .from('workspaces')
-    .select('id, name, owner_id, created_at')
-    .eq('owner_id', currentSession.user.id)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-
-  if (error) {
-    console.error('fetchWorkspace failed', error)
+function readStoredWorkspaceId() {
+  try {
+    return localStorage.getItem(LAST_WORKSPACE_KEY)
+  } catch {
     return null
   }
-  return data
+}
+
+function storeWorkspaceId(id) {
+  try {
+    localStorage.setItem(LAST_WORKSPACE_KEY, id)
+  } catch {
+    // Private browsing / blocked storage — the app still works, it just
+    // won't remember which workspace was open last.
+  }
+}
+
+// A workspace row is created by a database trigger the moment someone signs
+// up, and joining someone else's workspace adds a second membership — so a
+// person can legitimately have more than one.
+async function fetchWorkspaces(currentSession) {
+  if (!currentSession) return []
+
+  const { data, error } = await supabase
+    .from('workspace_members')
+    .select('role, created_at, workspaces (id, name, owner_id, created_at)')
+    .eq('user_id', currentSession.user.id)
+    .order('created_at')
+
+  if (error) {
+    console.error('fetchWorkspaces failed', error)
+    return []
+  }
+
+  return (data ?? [])
+    .filter((row) => row.workspaces)
+    .map((row) => ({ ...row.workspaces, role: row.role }))
 }
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
-  const [workspace, setWorkspace] = useState(null)
+  const [workspaces, setWorkspaces] = useState([])
+  const [workspaceId, setWorkspaceId] = useState(() => readStoredWorkspaceId())
   const [loading, setLoading] = useState(true)
+
+  const loadWorkspaces = useCallback(async (currentSession) => {
+    const list = await fetchWorkspaces(currentSession)
+    setWorkspaces(list)
+    setWorkspaceId((current) => {
+      const stillValid = list.some((w) => w.id === current)
+      return stillValid ? current : (list[0]?.id ?? null)
+    })
+    return list
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -34,27 +66,39 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return
       setSession(data.session)
-      setWorkspace(await fetchWorkspace(data.session))
+      await loadWorkspaces(data.session)
       setLoading(false)
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!active) return
       setSession(newSession)
-      setWorkspace(await fetchWorkspace(newSession))
+      await loadWorkspaces(newSession)
     })
 
     return () => {
       active = false
       listener.subscription.unsubscribe()
     }
-  }, [])
+  }, [loadWorkspaces])
+
+  const workspace = workspaces.find((w) => w.id === workspaceId) ?? null
+
+  function switchWorkspace(id) {
+    setWorkspaceId(id)
+    storeWorkspaceId(id)
+  }
 
   const value = {
     session,
     user: session?.user ?? null,
     workspace,
+    workspaces,
+    role: workspace?.role ?? null,
+    canInvite: workspace?.role === 'owner' || workspace?.role === 'admin',
     loading,
+    switchWorkspace,
+    refreshWorkspaces: () => loadWorkspaces(session),
     signOut: () => supabase.auth.signOut(),
   }
 
