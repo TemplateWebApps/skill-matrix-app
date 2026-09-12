@@ -8,19 +8,35 @@
   box-sizing: border-box;
 }
 
+/* Skill Matrix brand palette (fixed light theme, matches the prototype
+   regardless of the visitor's system dark/light setting — this app section
+   isn't dark-mode aware, same as the prototype it was ported from). */
 .app-shell {
+  --sm-navy: #122a54;
+  --sm-navy-2: #1c3d70;
+  --sm-navy-text: #c6d3ec;
+  --sm-navy-text-dim: #9fb2d6;
+  --sm-page-bg: #f4f6fb;
+  --sm-text: #1c2536;
+  --sm-text-dim: #5a6478;
+  --sm-border: #cfd5e2;
+
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: var(--sm-page-bg);
+  color: var(--sm-text);
 }
 
 .app-topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 24px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--sm-navy);
+  color: white;
 }
 
 .app-brand {
@@ -30,50 +46,57 @@
 }
 
 .app-title {
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--text-h);
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 17px;
+  color: white;
 }
 
 .app-workspace {
-  font-size: 12px;
-  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sm-navy-text-dim);
 }
 
 .app-nav {
   display: flex;
   gap: 4px;
+  justify-self: center;
 }
 
 .app-nav a {
   padding: 6px 14px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
-  color: var(--text-h);
+  color: var(--sm-navy-text);
 }
 
 .app-nav a.active {
-  background: var(--accent);
-  color: white;
+  background: white;
+  color: var(--sm-navy);
 }
 
 .app-user {
-  margin-left: auto;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
-  color: var(--text);
+  font-size: 12.5px;
+  color: var(--sm-navy-text-dim);
 }
 
 .app-user button {
   font: inherit;
-  padding: 6px 12px;
+  font-size: 12px;
+  padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   background: transparent;
-  color: var(--text-h);
+  color: white;
   cursor: pointer;
 }
 
@@ -102,6 +125,9 @@
 .dashboard-card {
   max-width: 440px;
   text-align: center;
+  background: white;
+  border-color: var(--sm-border, var(--border));
+  color: var(--sm-text, var(--text-h));
 }
 
 .auth-card h1,
@@ -130,6 +156,8 @@
 .auth-card button,
 .dashboard-actions button {
   font: inherit;
+  font-size: 14px;
+  font-weight: 600;
   padding: 10px 16px;
   border-radius: 6px;
   border: 1px solid var(--accent-border);
@@ -170,10 +198,11 @@
 }
 
 .eyebrow {
-  font-size: 13px;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text);
+  letter-spacing: 0.18em;
+  color: var(--sm-text-dim, var(--text));
   margin: 0;
 }
 

@@ -69,6 +69,16 @@ export default function Matrix() {
 
   const departmentsById = useMemo(() => new Map(departments.map((d) => [d.id, d])), [departments])
 
+  // Each department keeps one stable color everywhere it appears, based on
+  // its own position among all departments — not on where a given band of
+  // columns happens to land, which would make the same department flicker
+  // between colors as columns get reordered.
+  const BAND_COLOR_COUNT = 8
+  const departmentColorIndex = useMemo(
+    () => new Map(departments.map((d, i) => [d.id, i % BAND_COLOR_COUNT])),
+    [departments],
+  )
+
   const visibleSkills = useMemo(
     () => (departmentFilter === 'all' ? skills : skills.filter((s) => s.department_id === departmentFilter)),
     [skills, departmentFilter],
@@ -87,11 +97,16 @@ export default function Matrix() {
       if (last && last.departmentId === skill.department_id) {
         last.count += 1
       } else {
-        result.push({ departmentId: skill.department_id, name: departmentsById.get(skill.department_id)?.name ?? '—', count: 1 })
+        result.push({
+          departmentId: skill.department_id,
+          name: departmentsById.get(skill.department_id)?.name ?? '—',
+          count: 1,
+          colorIndex: departmentColorIndex.get(skill.department_id) ?? 0,
+        })
       }
     }
     return result
-  }, [visibleSkills, departmentsById])
+  }, [visibleSkills, departmentsById, departmentColorIndex])
 
   async function handleAddMember() {
     try {
@@ -237,7 +252,7 @@ export default function Matrix() {
                 </th>
                 <SortableContext items={visibleSkills.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
                   {bands.map((band, i) => (
-                    <th key={i} colSpan={band.count * 2} className={`band-header band-${i % 6}`}>
+                    <th key={i} colSpan={band.count * 2} className={`band-header band-${band.colorIndex}`}>
                       {band.name}
                     </th>
                   ))}
