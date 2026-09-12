@@ -81,6 +81,29 @@
   color: var(--sm-text-dim);
 }
 
+.team-row-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-remove {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--sm-border);
+  background: white;
+  color: var(--sm-text-dim);
+  cursor: pointer;
+}
+
+.team-remove:hover {
+  border-color: #e0362f;
+  color: #e0362f;
+}
+
 .team-role {
   font-size: 10px;
   font-weight: 700;
@@ -110,6 +133,18 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.team-name-input {
+  flex: 1;
+  min-width: 200px;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  padding: 7px 10px;
+  border: 1px solid var(--sm-border);
+  border-radius: 7px;
+  background: white;
+  color: var(--sm-text);
 }
 
 .team-invite-row select {

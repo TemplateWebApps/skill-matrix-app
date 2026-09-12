@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import './team.css'
 
 export default function Team() {
-  const { workspace, canInvite, user } = useAuth()
+  const { workspace, canInvite, user, refreshWorkspaces } = useAuth()
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -12,6 +12,29 @@ export default function Team() {
   const [inviteRole, setInviteRole] = useState('member')
   const [creating, setCreating] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [name, setName] = useState('')
+  const [savingName, setSavingName] = useState(false)
+
+  useEffect(() => {
+    setName(workspace?.name ?? '')
+  }, [workspace?.name])
+
+  async function saveName() {
+    const trimmed = name.trim()
+    if (!trimmed || trimmed === workspace.name) return
+    setSavingName(true)
+    setError(null)
+    const { error: updateError } = await supabase
+      .from('workspaces')
+      .update({ name: trimmed })
+      .eq('id', workspace.id)
+    setSavingName(false)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    await refreshWorkspaces()
+  }
 
   const load = useCallback(async () => {
     if (!workspace?.id) return
@@ -44,6 +67,26 @@ export default function Team() {
     setInviteLink(`${window.location.origin}/invite/${data}`)
   }
 
+  async function removeMember(member) {
+    const ok = window.confirm(
+      `Remove ${member.email} from ${workspace.name}? They'll lose access immediately.`,
+    )
+    if (!ok) return
+
+    setError(null)
+    const { error: deleteError } = await supabase
+      .from('workspace_members')
+      .delete()
+      .eq('workspace_id', workspace.id)
+      .eq('user_id', member.user_id)
+
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+    await load()
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(inviteLink)
@@ -66,6 +109,31 @@ export default function Team() {
 
       {error && <p className="auth-error">{error}</p>}
 
+      {canInvite && (
+        <section className="team-panel">
+          <h2>Workspace name</h2>
+          <p className="team-hint">
+            Everyone who joins sees this name, and it&apos;s how you tell workspaces apart when you
+            belong to more than one.
+          </p>
+          <div className="team-invite-row">
+            <input
+              className="team-name-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && saveName()}
+            />
+            <button
+              type="button"
+              onClick={saveName}
+              disabled={savingName || !name.trim() || name.trim() === workspace.name}
+            >
+              {savingName ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="team-panel">
         <h2>People</h2>
         {loading ? (
@@ -78,7 +146,19 @@ export default function Team() {
                   {m.email}
                   {m.user_id === user?.id && <span className="team-you">you</span>}
                 </span>
-                <span className={`team-role role-${m.role}`}>{m.role}</span>
+                <span className="team-row-end">
+                  <span className={`team-role role-${m.role}`}>{m.role}</span>
+                  {canInvite && m.role !== 'owner' && m.user_id !== user?.id && (
+                    <button
+                      type="button"
+                      className="team-remove"
+                      title={`Remove ${m.email}`}
+                      onClick={() => removeMember(m)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
