@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# This app is a single-page app: the server only ever has one real file
+# (index.html), and React Router decides what to show based on the URL.
+# Without this rule, opening /app/team or an /invite/<token> link directly —
+# which is exactly what an invited person does — would 404, because Netlify
+# would look for a file at that path and not find one.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
