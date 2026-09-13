@@ -98,6 +98,23 @@ export async function addSkill(workspaceId, departmentId, name, allSkills) {
   return created
 }
 
+export async function updateSkill(id, patch) {
+  const { error } = await supabase.from('skills').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function updateDepartment(id, patch) {
+  const { error } = await supabase.from('departments').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+// Deleting a department takes its skills with it (and their ratings), because
+// a skill can't exist without one. Callers must warn before calling this.
+export async function removeDepartment(id) {
+  const { error } = await supabase.from('departments').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function removeSkill(id) {
   const { error } = await supabase.from('skills').delete().eq('id', id)
   if (error) throw error

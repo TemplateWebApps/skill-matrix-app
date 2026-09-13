@@ -15,8 +15,11 @@ import {
   removeMember,
   reorderMembers,
   addSkill,
+  updateSkill,
   removeSkill,
   reorderSkills,
+  updateDepartment,
+  removeDepartment,
   findOrCreateDepartment,
   setRatingLevel,
 } from '../lib/matrixApi'
@@ -24,6 +27,7 @@ import MatrixToolbar from '../components/matrix/MatrixToolbar'
 import MemberRow from '../components/matrix/MemberRow'
 import SkillHeaderCell from '../components/matrix/SkillHeaderCell'
 import AddSkillForm from '../components/matrix/AddSkillForm'
+import ManagePanel from '../components/matrix/ManagePanel'
 import '../components/matrix/matrix.css'
 
 export default function Matrix() {
@@ -38,11 +42,16 @@ export default function Matrix() {
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [showAddSkill, setShowAddSkill] = useState(false)
   const [addSkillError, setAddSkillError] = useState(null)
+  const [showManage, setShowManage] = useState(false)
+  const [manageError, setManageError] = useState(null)
   const [addingMember, setAddingMember] = useState(false)
   // A ref, not the state above: several clicks landing in one frame all share
   // the same render's closure, so the state flag still reads false in each of
   // them and the disabled button hasn't re-rendered yet. A ref updates now.
   const addingMemberRef = useRef(false)
+  // Last name actually saved for each member, so a cleared field can be put
+  // back without a round trip.
+  const savedMemberNames = useRef(new Map())
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -54,6 +63,7 @@ export default function Matrix() {
       setDepartments(data.departments)
       setSkills(data.skills)
       setMembers(data.members)
+      savedMemberNames.current = new Map(data.members.map((m) => [m.id, m.name]))
       setRatings(data.ratings)
       setError(null)
     } catch (err) {
@@ -124,6 +134,7 @@ export default function Matrix() {
     try {
       const nextSort = members.reduce((max, m) => Math.max(max, m.sort_order ?? 0), -1) + 1
       const created = await addMember(workspace.id, nextSort)
+      savedMemberNames.current.set(created.id, created.name)
       setMembers((prev) => [...prev, created])
     } catch (err) {
       setError(err.message)
@@ -138,8 +149,19 @@ export default function Matrix() {
   }
 
   async function handleRenameCommit(id, patch) {
+    // A blank name leaves a row nobody can identify or search for, so put back
+    // what was there rather than saving nothing.
+    if ('name' in patch && !patch.name.trim()) {
+      const saved = savedMemberNames.current.get(id)
+      setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, name: saved ?? 'Unnamed' } : m)))
+      return
+    }
+
+    const patchToSave = 'name' in patch ? { name: patch.name.trim() } : patch
+    if ('name' in patchToSave) savedMemberNames.current.set(id, patchToSave.name)
+
     try {
-      await updateMember(id, patch)
+      await updateMember(id, patchToSave)
     } catch (err) {
       setError(err.message)
     }
@@ -177,6 +199,57 @@ export default function Matrix() {
       await load()
     } catch (err) {
       setAddSkillError(err.message)
+    }
+  }
+
+  async function handleRenameSkill(id, name) {
+    const prev = skills
+    setManageError(null)
+    setSkills((p) => p.map((s) => (s.id === id ? { ...s, name } : s)))
+    try {
+      await updateSkill(id, { name })
+    } catch (err) {
+      setManageError(err.message)
+      setSkills(prev)
+    }
+  }
+
+  async function handleRenameDepartment(id, name) {
+    const prev = departments
+    setManageError(null)
+    setDepartments((p) => p.map((d) => (d.id === id ? { ...d, name } : d)))
+    try {
+      await updateDepartment(id, { name })
+    } catch (err) {
+      setManageError(err.message)
+      setDepartments(prev)
+    }
+  }
+
+  async function handleDeleteDepartment(dept, skillCount) {
+    const detail =
+      skillCount > 0
+        ? `Delete "${dept.name}"? Its ${skillCount} ${skillCount === 1 ? 'skill' : 'skills'} and every rating on them will be deleted too.`
+        : `Delete "${dept.name}"?`
+    if (!window.confirm(detail)) return
+
+    setManageError(null)
+    try {
+      await removeDepartment(dept.id)
+      await load()
+    } catch (err) {
+      setManageError(err.message)
+    }
+  }
+
+  async function handleDeleteSkillFromPanel(skill) {
+    if (!window.confirm(`Delete "${skill.name}"? Every rating on it will be deleted too.`)) return
+    setManageError(null)
+    try {
+      await removeSkill(skill.id)
+      await load()
+    } catch (err) {
+      setManageError(err.message)
     }
   }
 
@@ -268,6 +341,7 @@ export default function Matrix() {
         onAddMember={handleAddMember}
         addingMember={addingMember}
         onAddSkill={() => setShowAddSkill(true)}
+        onManage={() => setShowManage(true)}
       />
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -330,6 +404,22 @@ export default function Matrix() {
           onClose={() => {
             setShowAddSkill(false)
             setAddSkillError(null)
+          }}
+        />
+      )}
+
+      {showManage && (
+        <ManagePanel
+          departments={departments}
+          skills={skills}
+          error={manageError}
+          onRenameDepartment={handleRenameDepartment}
+          onDeleteDepartment={handleDeleteDepartment}
+          onRenameSkill={handleRenameSkill}
+          onDeleteSkill={handleDeleteSkillFromPanel}
+          onClose={() => {
+            setShowManage(false)
+            setManageError(null)
           }}
         />
       )}

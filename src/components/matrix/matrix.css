@@ -330,6 +330,92 @@
   color: var(--sm-text);
 }
 
+/* ---- manage skills panel ---- */
+
+.manage-card {
+  max-width: 460px;
+  max-height: 80vh;
+}
+
+.manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.manage-dept {
+  border: 1px solid var(--sm-border);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.manage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manage-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sm-text);
+}
+
+.manage-row input:hover {
+  border-color: var(--sm-border);
+}
+
+.manage-row input:focus {
+  border-color: var(--sm-navy);
+  background: white;
+  outline: none;
+}
+
+.manage-row-dept input {
+  font-weight: 700;
+}
+
+.manage-count {
+  font-size: 11px;
+  color: var(--sm-text-dim);
+  white-space: nowrap;
+}
+
+.manage-delete {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--sm-border);
+  background: white;
+  color: var(--sm-text-dim);
+  cursor: pointer;
+}
+
+.manage-delete:hover {
+  border-color: #e0362f;
+  color: #e0362f;
+}
+
+.manage-skills {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 0 0 10px;
+  border-left: 2px solid var(--sm-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

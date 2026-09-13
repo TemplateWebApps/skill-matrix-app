@@ -9,6 +9,7 @@ export default function MatrixToolbar({
   onAddMember,
   addingMember,
   onAddSkill,
+  onManage,
 }) {
   return (
     <div className="matrix-toolbar">
@@ -32,6 +33,9 @@ export default function MatrixToolbar({
         </button>
         <button type="button" onClick={onAddSkill}>
           + Skill
+        </button>
+        <button type="button" className="secondary" onClick={onManage}>
+          Manage skills
         </button>
       </div>
       <div className="toolbar-row legend">

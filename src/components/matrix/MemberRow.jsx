@@ -25,6 +25,8 @@ export default function MemberRow({ member, skills, ratingsMap, onRename, onRena
           <input
             className="member-name"
             value={member.name}
+            maxLength={80}
+            aria-label="Member name"
             onChange={(e) => onRename(member.id, { name: e.target.value })}
             onBlur={(e) => onRenameCommit(member.id, { name: e.target.value })}
           />
@@ -32,6 +34,8 @@ export default function MemberRow({ member, skills, ratingsMap, onRename, onRena
             className="member-role"
             value={member.role ?? ''}
             placeholder="Role"
+            maxLength={80}
+            aria-label="Member role"
             onChange={(e) => onRename(member.id, { role: e.target.value })}
             onBlur={(e) => onRenameCommit(member.id, { role: e.target.value })}
           />
