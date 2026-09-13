@@ -15,7 +15,16 @@ export default function Signup() {
     setError(null)
     setSubmitting(true)
 
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    // Send the confirmation link back to wherever this signup actually
+    // happened — localhost during development, the live site in production —
+    // instead of always using the one Site URL configured in the dashboard.
+    // Landing on "/" lets the router decide: signed in goes to the app,
+    // signed out goes to login.
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/` },
+    })
 
     setSubmitting(false)
     if (signUpError) {
