@@ -37,6 +37,7 @@ export default function Matrix() {
   const [search, setSearch] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [showAddSkill, setShowAddSkill] = useState(false)
+  const [addSkillError, setAddSkillError] = useState(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -142,6 +143,7 @@ export default function Matrix() {
   }
 
   async function handleAddSkill({ name, departmentId, newDepartmentName }) {
+    setAddSkillError(null)
     try {
       let targetDeptId = departmentId
       let nextDepartments = departments
@@ -151,11 +153,15 @@ export default function Matrix() {
         nextDepartments = departments.some((d) => d.id === dept.id) ? departments : [...departments, dept]
         setDepartments(nextDepartments)
       }
+      if (!targetDeptId) {
+        setAddSkillError('Pick a department, or give the new one a name.')
+        return
+      }
       await addSkill(workspace.id, targetDeptId, name, skills)
       setShowAddSkill(false)
       await load()
     } catch (err) {
-      setError(err.message)
+      setAddSkillError(err.message)
     }
   }
 
@@ -295,7 +301,15 @@ export default function Matrix() {
       </DndContext>
 
       {showAddSkill && (
-        <AddSkillForm departments={departments} onSubmit={handleAddSkill} onClose={() => setShowAddSkill(false)} />
+        <AddSkillForm
+          departments={departments}
+          error={addSkillError}
+          onSubmit={handleAddSkill}
+          onClose={() => {
+            setShowAddSkill(false)
+            setAddSkillError(null)
+          }}
+        />
       )}
     </div>
   )
