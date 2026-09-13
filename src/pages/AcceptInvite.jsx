@@ -88,10 +88,13 @@ export default function AcceptInvite() {
           </>
         ) : (
           <>
-            <p>Log in or create an account first, then open this link again to join.</p>
+            <p>
+              Log in or create an account to join. We&apos;ll bring you right back here
+              afterwards.
+            </p>
             <div className="invite-actions">
-              <Link to="/login">Log in</Link>
-              <Link to="/signup">Sign up</Link>
+              <Link to={`/login?invite=${token}`}>Log in</Link>
+              <Link to={`/signup?invite=${token}`}>Sign up</Link>
             </div>
           </>
         )}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
 export default function Signup() {
@@ -9,6 +9,9 @@ export default function Signup() {
   const [submitting, setSubmitting] = useState(false)
   const [confirmSent, setConfirmSent] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const inviteToken = searchParams.get('invite')
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -18,12 +21,15 @@ export default function Signup() {
     // Send the confirmation link back to wherever this signup actually
     // happened — localhost during development, the live site in production —
     // instead of always using the one Site URL configured in the dashboard.
-    // Landing on "/" lets the router decide: signed in goes to the app,
-    // signed out goes to login.
+    // Someone who came from an invite goes straight back to that invite after
+    // confirming; everyone else lands on "/", where the router sends them to
+    // the app or to login depending on whether they're signed in.
+    const destination = inviteToken ? `/invite/${inviteToken}` : '/'
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      options: { emailRedirectTo: `${window.location.origin}${destination}` },
     })
 
     setSubmitting(false)
@@ -38,7 +44,7 @@ export default function Signup() {
       return
     }
 
-    navigate('/app')
+    navigate(inviteToken ? `/invite/${inviteToken}` : '/app')
   }
 
   if (confirmSent) {
@@ -46,7 +52,12 @@ export default function Signup() {
       <div className="auth-page">
         <div className="auth-card">
           <h1>Check your email</h1>
-          <p>We sent a confirmation link to {email}. Click it, then log in.</p>
+          <p>
+            We sent a confirmation link to {email}.{' '}
+            {inviteToken
+              ? "Click it and you'll be taken straight back to the invite."
+              : 'Click it, then log in.'}
+          </p>
         </div>
       </div>
     )
@@ -55,7 +66,7 @@ export default function Signup() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>Create your workspace</h1>
+        <h1>{inviteToken ? 'Create your account' : 'Create your workspace'}</h1>
         {error && <p className="auth-error">{error}</p>}
         <label>
           Email
@@ -82,7 +93,8 @@ export default function Signup() {
           {submitting ? 'Creating…' : 'Sign up'}
         </button>
         <p className="auth-switch">
-          Already have an account? <Link to="/login">Log in</Link>
+          Already have an account?{' '}
+          <Link to={inviteToken ? `/login?invite=${inviteToken}` : '/login'}>Log in</Link>
         </p>
       </form>
     </div>

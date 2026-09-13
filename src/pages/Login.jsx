@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
 export default function Login() {
@@ -8,6 +8,12 @@ export default function Login() {
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Someone who arrived from an invite link carries the token through login,
+  // so they land back on the invite instead of having to dig the link out of
+  // their email again.
+  const inviteToken = searchParams.get('invite')
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -20,7 +26,7 @@ export default function Login() {
       setError(error.message)
       return
     }
-    navigate('/app')
+    navigate(inviteToken ? `/invite/${inviteToken}` : '/app')
   }
 
   return (
@@ -52,7 +58,8 @@ export default function Login() {
           {submitting ? 'Logging in…' : 'Log in'}
         </button>
         <p className="auth-switch">
-          No account? <Link to="/signup">Sign up</Link>
+          No account?{' '}
+          <Link to={inviteToken ? `/signup?invite=${inviteToken}` : '/signup'}>Sign up</Link>
         </p>
       </form>
     </div>
