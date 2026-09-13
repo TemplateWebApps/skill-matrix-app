@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, useCallback } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -38,6 +38,11 @@ export default function Matrix() {
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [showAddSkill, setShowAddSkill] = useState(false)
   const [addSkillError, setAddSkillError] = useState(null)
+  const [addingMember, setAddingMember] = useState(false)
+  // A ref, not the state above: several clicks landing in one frame all share
+  // the same render's closure, so the state flag still reads false in each of
+  // them and the disabled button hasn't re-rendered yet. A ref updates now.
+  const addingMemberRef = useRef(false)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
@@ -110,11 +115,21 @@ export default function Matrix() {
   }, [visibleSkills, departmentsById, departmentColorIndex])
 
   async function handleAddMember() {
+    // Guarded because impatient double-clicks used to fire several adds off the
+    // same render, handing every new row an identical sort_order — which left
+    // their order up to the database and made rows swap places between loads.
+    if (addingMemberRef.current) return
+    addingMemberRef.current = true
+    setAddingMember(true)
     try {
-      const created = await addMember(workspace.id, members.length)
+      const nextSort = members.reduce((max, m) => Math.max(max, m.sort_order ?? 0), -1) + 1
+      const created = await addMember(workspace.id, nextSort)
       setMembers((prev) => [...prev, created])
     } catch (err) {
       setError(err.message)
+    } finally {
+      addingMemberRef.current = false
+      setAddingMember(false)
     }
   }
 
@@ -196,40 +211,46 @@ export default function Matrix() {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
+    // Everything below reads current state and saves outside of setState on
+    // purpose. A state updater has to be a pure function — React may call it
+    // more than once for the same update (it deliberately does so in
+    // development), and a save fired from inside one runs every time.
     const activeType = active.data.current?.type
+
     if (activeType === 'member') {
-      setMembers((prev) => {
-        const oldIndex = prev.findIndex((m) => m.id === active.id)
-        const newIndex = prev.findIndex((m) => m.id === over.id)
-        const next = arrayMove(prev, oldIndex, newIndex)
-        reorderMembers(next.map((m) => m.id)).catch((err) => setError(err.message))
-        return next
-      })
-    } else if (activeType === 'skill' && departmentFilter === 'all') {
-      setSkills((prev) => {
-        const oldIndex = prev.findIndex((s) => s.id === active.id)
-        const newIndex = prev.findIndex((s) => s.id === over.id)
-        let next = arrayMove(prev, oldIndex, newIndex)
+      const oldIndex = members.findIndex((m) => m.id === active.id)
+      const newIndex = members.findIndex((m) => m.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
 
-        // Regroup the dragged skill under whichever department it now neighbors.
-        const draggedIndex = next.findIndex((s) => s.id === active.id)
-        const prevNeighbor = next[draggedIndex - 1]
-        const nextNeighbor = next[draggedIndex + 1]
-        let newDept = next[draggedIndex].department_id
-        if (prevNeighbor && nextNeighbor && prevNeighbor.department_id === nextNeighbor.department_id) {
-          newDept = prevNeighbor.department_id
-        } else if (prevNeighbor) {
-          newDept = prevNeighbor.department_id
-        } else if (nextNeighbor) {
-          newDept = nextNeighbor.department_id
-        }
-        next = next.map((s, i) => (i === draggedIndex ? { ...s, department_id: newDept } : s))
+      const next = arrayMove(members, oldIndex, newIndex)
+      setMembers(next)
+      reorderMembers(next.map((m) => m.id)).catch((err) => setError(err.message))
+      return
+    }
 
-        reorderSkills(next.map((s) => ({ id: s.id, department_id: s.department_id }))).catch((err) =>
-          setError(err.message),
-        )
-        return next
-      })
+    if (activeType === 'skill' && departmentFilter === 'all') {
+      const oldIndex = skills.findIndex((s) => s.id === active.id)
+      const newIndex = skills.findIndex((s) => s.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      let next = arrayMove(skills, oldIndex, newIndex)
+
+      // Regroup the dragged skill under whichever department it now neighbors.
+      const draggedIndex = next.findIndex((s) => s.id === active.id)
+      const prevNeighbor = next[draggedIndex - 1]
+      const nextNeighbor = next[draggedIndex + 1]
+      let newDept = next[draggedIndex].department_id
+      if (prevNeighbor && nextNeighbor && prevNeighbor.department_id === nextNeighbor.department_id) {
+        newDept = prevNeighbor.department_id
+      } else if (prevNeighbor) {
+        newDept = prevNeighbor.department_id
+      } else if (nextNeighbor) {
+        newDept = nextNeighbor.department_id
+      }
+      next = next.map((s, i) => (i === draggedIndex ? { ...s, department_id: newDept } : s))
+
+      setSkills(next)
+      reorderSkills(next).catch((err) => setError(err.message))
     }
   }
 
@@ -245,6 +266,7 @@ export default function Matrix() {
         departmentFilter={departmentFilter}
         onDepartmentFilterChange={setDepartmentFilter}
         onAddMember={handleAddMember}
+        addingMember={addingMember}
         onAddSkill={() => setShowAddSkill(true)}
       />
 

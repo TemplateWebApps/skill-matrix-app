@@ -40,12 +40,18 @@ export async function removeMember(id) {
   if (error) throw error
 }
 
-export async function reorderMembers(orderedIds) {
-  const results = await Promise.all(
-    orderedIds.map((id, index) => supabase.from('members').update({ sort_order: index }).eq('id', id)),
-  )
-  const failed = results.find((r) => r.error)
-  if (failed) throw failed.error
+// One request for the whole new order rather than one per row — a 30-person
+// list was firing 30 separate updates for a single drag.
+export async function reorderMembers(orderedMembers) {
+  const rows = orderedMembers.map((m, index) => ({
+    id: m.id,
+    workspace_id: m.workspace_id,
+    name: m.name,
+    role: m.role,
+    sort_order: index,
+  }))
+  const { error } = await supabase.from('members').upsert(rows)
+  if (error) throw error
 }
 
 // Finds (or creates) a department by name within a workspace.
@@ -85,8 +91,9 @@ export async function addSkill(workspaceId, departmentId, name, allSkills) {
     .single()
   if (insertError) throw insertError
 
+  // reorderSkills upserts whole rows, so hand it the real ones.
   const finalOrder = newOrder.map((s) => (s.id === '__new__' ? created : s))
-  await reorderSkills(finalOrder.map((s) => ({ id: s.id, department_id: s.department_id })))
+  await reorderSkills(finalOrder)
 
   return created
 }
@@ -96,15 +103,17 @@ export async function removeSkill(id) {
   if (error) throw error
 }
 
-// orderedSkills: [{ id, department_id }] in final display order.
+// orderedSkills: full skill rows in final display order.
 export async function reorderSkills(orderedSkills) {
-  const results = await Promise.all(
-    orderedSkills.map((s, index) =>
-      supabase.from('skills').update({ sort_order: index, department_id: s.department_id }).eq('id', s.id),
-    ),
-  )
-  const failed = results.find((r) => r.error)
-  if (failed) throw failed.error
+  const rows = orderedSkills.map((s, index) => ({
+    id: s.id,
+    workspace_id: s.workspace_id,
+    department_id: s.department_id,
+    name: s.name,
+    sort_order: index,
+  }))
+  const { error } = await supabase.from('skills').upsert(rows)
+  if (error) throw error
 }
 
 // field is 'current_level' or 'target_level'. value is null or 1-4.

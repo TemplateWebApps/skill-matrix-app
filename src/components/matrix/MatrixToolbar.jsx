@@ -7,6 +7,7 @@ export default function MatrixToolbar({
   departmentFilter,
   onDepartmentFilterChange,
   onAddMember,
+  addingMember,
   onAddSkill,
 }) {
   return (
@@ -26,8 +27,8 @@ export default function MatrixToolbar({
             </option>
           ))}
         </select>
-        <button type="button" onClick={onAddMember}>
-          + Member
+        <button type="button" onClick={onAddMember} disabled={addingMember}>
+          {addingMember ? 'Adding…' : '+ Member'}
         </button>
         <button type="button" onClick={onAddSkill}>
           + Skill
