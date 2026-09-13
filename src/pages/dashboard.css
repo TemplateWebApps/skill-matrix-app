@@ -1,0 +1,313 @@
+.dashboard-page {
+  padding: 20px;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* ---- stat tiles ---- */
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 820px) {
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.stat-tile {
+  background: white;
+  border: 1px solid var(--sm-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sm-text-dim);
+}
+
+.stat-value {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sm-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-unit {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sm-text-dim);
+  margin-left: 2px;
+}
+
+.stat-track {
+  height: 4px;
+  border-radius: 4px;
+  background: #e7ebf3;
+  overflow: hidden;
+}
+
+.stat-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--sm-navy);
+}
+
+.stat-sub {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--sm-text-dim);
+}
+
+/* ---- panels ---- */
+
+.panel {
+  background: white;
+  border: 1px solid var(--sm-border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--sm-text);
+}
+
+.panel-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sm-text-dim);
+}
+
+.panel-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 820px) {
+  .panel-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dashboard-page button {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 7px;
+  border: none;
+  background: var(--sm-navy);
+  color: white;
+  cursor: pointer;
+}
+
+.dashboard-page button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.dashboard-page button.secondary {
+  border: 1px solid var(--sm-border);
+  background: white;
+  color: var(--sm-text);
+}
+
+.empty-panel,
+.demo-panel {
+  max-width: 520px;
+}
+
+/* ---- distribution bars ---- */
+
+.bar-list,
+.dept-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bar-list li {
+  display: grid;
+  grid-template-columns: 20px 130px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.bar-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bar-label {
+  color: var(--sm-text);
+}
+
+.bar-track {
+  display: block;
+  height: 14px;
+  background: #f1f4f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Keep a small non-zero count visible, but never paint a mark for zero. */
+.bar-fill:not(.is-zero) {
+  min-width: 3px;
+}
+
+.bar-value {
+  text-align: right;
+  color: var(--sm-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- department coverage (current bar over a fainter target track) ---- */
+
+.dept-list li {
+  display: grid;
+  grid-template-columns: 150px 1fr 74px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.dept-name {
+  color: var(--sm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dept-track {
+  position: relative;
+  display: block;
+  height: 16px;
+  background: #f1f4f9;
+  border-radius: 4px;
+}
+
+.dept-target,
+.dept-current {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.dept-target {
+  background: #c9d4e6;
+}
+
+.dept-current {
+  background: var(--sm-navy);
+  /* 2px gap so the two fills read as separate marks where they meet */
+  border-right: 2px solid white;
+}
+
+.dept-value {
+  text-align: right;
+  color: var(--sm-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.dept-sep {
+  color: var(--sm-text-dim);
+}
+
+/* ---- ranked lists ---- */
+
+.ranked {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ranked li {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--sm-border);
+  font-size: 12.5px;
+}
+
+.ranked li:last-child {
+  border-bottom: none;
+}
+
+.rank-num {
+  color: var(--sm-text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-name {
+  color: var(--sm-text);
+  overflow-wrap: anywhere;
+}
+
+.rank-meta {
+  display: block;
+  font-size: 10.5px;
+  color: var(--sm-text-dim);
+}
+
+.rank-value {
+  color: var(--sm-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
