@@ -8,9 +8,11 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { useAuth } from '../contexts/AuthContext'
+import { useFeedback } from '../contexts/FeedbackContext'
+import { useWorkspaceData } from '../contexts/WorkspaceDataContext'
 import {
-  fetchMatrix,
   addMember,
+  addDepartment,
   updateMember,
   removeMember,
   reorderMembers,
@@ -27,21 +29,39 @@ import MatrixToolbar from '../components/matrix/MatrixToolbar'
 import MemberRow from '../components/matrix/MemberRow'
 import SkillHeaderCell from '../components/matrix/SkillHeaderCell'
 import AddSkillForm from '../components/matrix/AddSkillForm'
+import AddMemberForm from '../components/matrix/AddMemberForm'
+import AddCategoryForm from '../components/matrix/AddCategoryForm'
 import ManagePanel from '../components/matrix/ManagePanel'
 import '../components/matrix/matrix.css'
 
 export default function Matrix() {
   const { workspace } = useAuth()
-  const [departments, setDepartments] = useState([])
-  const [skills, setSkills] = useState([])
-  const [members, setMembers] = useState([])
-  const [ratings, setRatings] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { confirm, toast } = useFeedback()
+  const {
+    departments,
+    skills,
+    members,
+    ratings,
+    setDepartments,
+    setSkills,
+    setMembers,
+    setRatings,
+    reload: load,
+    loading,
+    error,
+    setError,
+  } = useWorkspaceData()
   const [search, setSearch] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [showAddSkill, setShowAddSkill] = useState(false)
+  const [addSkillFor, setAddSkillFor] = useState(null) // department preselected by a "+" in its bar
   const [addSkillError, setAddSkillError] = useState(null)
+  const [savingSkill, setSavingSkill] = useState(false)
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [addMemberError, setAddMemberError] = useState(null)
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [addCategoryError, setAddCategoryError] = useState(null)
+  const [savingCategory, setSavingCategory] = useState(false)
   const [showManage, setShowManage] = useState(false)
   const [manageError, setManageError] = useState(null)
   const [addingMember, setAddingMember] = useState(false)
@@ -55,27 +75,10 @@ export default function Matrix() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
-  const load = useCallback(async () => {
-    if (!workspace?.id) return
-    setLoading(true)
-    try {
-      const data = await fetchMatrix(workspace.id)
-      setDepartments(data.departments)
-      setSkills(data.skills)
-      setMembers(data.members)
-      savedMemberNames.current = new Map(data.members.map((m) => [m.id, m.name]))
-      setRatings(data.ratings)
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [workspace?.id])
-
+  // Keep the "last saved name" map in step with whatever the shared store holds.
   useEffect(() => {
-    load()
-  }, [load])
+    savedMemberNames.current = new Map(members.map((m) => [m.id, m.name]))
+  }, [members])
 
   const ratingsMap = useMemo(() => {
     const map = new Map()
@@ -124,23 +127,56 @@ export default function Matrix() {
     return result
   }, [visibleSkills, departmentsById, departmentColorIndex])
 
-  async function handleAddMember() {
+  // Categories with nothing in them still get a bar, so you can create one and
+  // then fill it — the way a spreadsheet shows an empty column heading.
+  const emptyDepartments = useMemo(() => {
+    const withSkills = new Set(skills.map((s) => s.department_id))
+    return departments
+      .filter((d) => !withSkills.has(d.id))
+      .filter((d) => departmentFilter === 'all' || d.id === departmentFilter)
+  }, [departments, skills, departmentFilter])
+
+  function openAddSkillFor(departmentId) {
+    setAddSkillError(null)
+    setAddSkillFor(departmentId ?? null)
+    setShowAddSkill(true)
+  }
+
+  async function handleAddMember({ name, role }) {
     // Guarded because impatient double-clicks used to fire several adds off the
     // same render, handing every new row an identical sort_order — which left
     // their order up to the database and made rows swap places between loads.
     if (addingMemberRef.current) return
     addingMemberRef.current = true
     setAddingMember(true)
+    setAddMemberError(null)
     try {
       const nextSort = members.reduce((max, m) => Math.max(max, m.sort_order ?? 0), -1) + 1
-      const created = await addMember(workspace.id, nextSort)
+      const created = await addMember(workspace.id, nextSort, { name, role })
       savedMemberNames.current.set(created.id, created.name)
       setMembers((prev) => [...prev, created])
+      setShowAddMember(false)
+      toast(`${created.name} added`)
     } catch (err) {
-      setError(err.message)
+      setAddMemberError(err.message)
     } finally {
       addingMemberRef.current = false
       setAddingMember(false)
+    }
+  }
+
+  async function handleAddCategory(name) {
+    setSavingCategory(true)
+    setAddCategoryError(null)
+    try {
+      const created = await addDepartment(workspace.id, name, departments)
+      setDepartments((prev) => [...prev, created])
+      setShowAddCategory(false)
+      toast(`${created.name} added`)
+    } catch (err) {
+      setAddCategoryError(err.message)
+    } finally {
+      setSavingCategory(false)
     }
   }
 
@@ -168,11 +204,20 @@ export default function Matrix() {
   }
 
   async function handleRemoveMember(id) {
-    if (!window.confirm('Remove this team member? This deletes all of their ratings too.')) return
+    const member = members.find((m) => m.id === id)
+    const ok = await confirm({
+      title: `Remove ${member?.name || 'this person'}?`,
+      message: 'Their ratings across every skill will be deleted too. This cannot be undone.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    })
+    if (!ok) return
+
     const prev = members
     setMembers((p) => p.filter((m) => m.id !== id))
     try {
       await removeMember(id)
+      toast(`${member?.name || 'Person'} removed`)
     } catch (err) {
       setError(err.message)
       setMembers(prev)
@@ -191,14 +236,21 @@ export default function Matrix() {
         setDepartments(nextDepartments)
       }
       if (!targetDeptId) {
-        setAddSkillError('Pick a department, or give the new one a name.')
+        setAddSkillError('Pick a category, or give the new one a name.')
         return
       }
-      await addSkill(workspace.id, targetDeptId, name, skills)
+      setSavingSkill(true)
+      // Use the order addSkill worked out rather than refetching the whole
+      // workspace — that round trip was what made adding feel slow.
+      const { created, order } = await addSkill(workspace.id, targetDeptId, name, skills)
+      setSkills(order)
       setShowAddSkill(false)
-      await load()
+      setAddSkillFor(null)
+      toast(`${created.name} added`)
     } catch (err) {
       setAddSkillError(err.message)
+    } finally {
+      setSavingSkill(false)
     }
   }
 
@@ -227,38 +279,61 @@ export default function Matrix() {
   }
 
   async function handleDeleteDepartment(dept, skillCount) {
-    const detail =
-      skillCount > 0
-        ? `Delete "${dept.name}"? Its ${skillCount} ${skillCount === 1 ? 'skill' : 'skills'} and every rating on them will be deleted too.`
-        : `Delete "${dept.name}"?`
-    if (!window.confirm(detail)) return
+    const ok = await confirm({
+      title: `Delete ${dept.name}?`,
+      message:
+        skillCount > 0
+          ? `Its ${skillCount} ${skillCount === 1 ? 'skill' : 'skills'} will be deleted as well, along with every rating on them. This cannot be undone.`
+          : 'This department has no skills in it. This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
 
     setManageError(null)
     try {
       await removeDepartment(dept.id)
       await load()
+      toast(`${dept.name} deleted`)
     } catch (err) {
       setManageError(err.message)
     }
   }
 
   async function handleDeleteSkillFromPanel(skill) {
-    if (!window.confirm(`Delete "${skill.name}"? Every rating on it will be deleted too.`)) return
+    const ok = await confirm({
+      title: `Delete ${skill.name}?`,
+      message: 'Every rating on this skill will be deleted too. This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
+
     setManageError(null)
     try {
       await removeSkill(skill.id)
       await load()
+      toast(`${skill.name} deleted`)
     } catch (err) {
       setManageError(err.message)
     }
   }
 
   async function handleRemoveSkill(id) {
-    if (!window.confirm('Remove this skill? This deletes all ratings for it too.')) return
+    const skill = skills.find((s) => s.id === id)
+    const ok = await confirm({
+      title: `Remove ${skill?.name || 'this skill'}?`,
+      message: 'Every rating on this skill will be deleted too. This cannot be undone.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    })
+    if (!ok) return
+
     const prev = skills
     setSkills((p) => p.filter((s) => s.id !== id))
     try {
       await removeSkill(id)
+      toast(`${skill?.name || 'Skill'} removed`)
     } catch (err) {
       setError(err.message)
       setSkills(prev)
@@ -338,9 +413,12 @@ export default function Matrix() {
         departments={departments}
         departmentFilter={departmentFilter}
         onDepartmentFilterChange={setDepartmentFilter}
-        onAddMember={handleAddMember}
+        onAddMember={() => {
+          setAddMemberError(null)
+          setShowAddMember(true)
+        }}
         addingMember={addingMember}
-        onAddSkill={() => setShowAddSkill(true)}
+        onAddSkill={() => openAddSkillFor(null)}
         onManage={() => setShowManage(true)}
       />
 
@@ -350,15 +428,63 @@ export default function Matrix() {
             <thead>
               <tr>
                 <th className="pinned-corner" rowSpan={3}>
-                  Team member
+                  <span className="corner-label">Team member</span>
+                  <button
+                    type="button"
+                    className="corner-add"
+                    title="Add a team member"
+                    onClick={() => {
+                      setAddMemberError(null)
+                      setShowAddMember(true)
+                    }}
+                  >
+                    +
+                  </button>
                 </th>
                 <SortableContext items={visibleSkills.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
                   {bands.map((band, i) => (
                     <th key={i} colSpan={band.count * 2} className={`band-header band-${band.colorIndex}`}>
-                      {band.name}
+                      <span className="band-name">{band.name}</span>
+                      <button
+                        type="button"
+                        className="band-add"
+                        title={`Add a skill to ${band.name}`}
+                        onClick={() => openAddSkillFor(band.departmentId)}
+                      >
+                        +
+                      </button>
                     </th>
                   ))}
                 </SortableContext>
+                {emptyDepartments.map((dept) => (
+                  <th
+                    key={dept.id}
+                    className={`band-header band-${departmentColorIndex.get(dept.id) ?? 0}`}
+                  >
+                    <span className="band-name">{dept.name}</span>
+                    <button
+                      type="button"
+                      className="band-add"
+                      title={`Add a skill to ${dept.name}`}
+                      onClick={() => openAddSkillFor(dept.id)}
+                    >
+                      +
+                    </button>
+                  </th>
+                ))}
+                <th className="add-category-col" rowSpan={3}>
+                  <button
+                    type="button"
+                    className="add-category-btn"
+                    title="Add a category"
+                    onClick={() => {
+                      setAddCategoryError(null)
+                      setShowAddCategory(true)
+                    }}
+                  >
+                    + Category
+                  </button>
+                </th>
               </tr>
               <tr>
                 <SortableContext items={visibleSkills.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
@@ -366,6 +492,13 @@ export default function Matrix() {
                     <SkillHeaderCell key={skill.id} skill={skill} onRemove={handleRemoveSkill} />
                   ))}
                 </SortableContext>
+                {emptyDepartments.map((dept) => (
+                  <th key={dept.id} className="skill-header empty-dept">
+                    <button type="button" className="empty-dept-add" onClick={() => openAddSkillFor(dept.id)}>
+                      + Skill
+                    </button>
+                  </th>
+                ))}
               </tr>
               <tr>
                 {visibleSkills.map((skill) => (
@@ -373,6 +506,9 @@ export default function Matrix() {
                     <th className="curtar-label">Cur</th>
                     <th className="curtar-label">Tar</th>
                   </Fragment>
+                ))}
+                {emptyDepartments.map((dept) => (
+                  <th key={dept.id} className="curtar-label" />
                 ))}
               </tr>
             </thead>
@@ -383,6 +519,7 @@ export default function Matrix() {
                     key={member.id}
                     member={member}
                     skills={visibleSkills}
+                    emptyDepartments={emptyDepartments}
                     ratingsMap={ratingsMap}
                     onRename={handleRenameLocal}
                     onRenameCommit={handleRenameCommit}
@@ -399,11 +536,38 @@ export default function Matrix() {
       {showAddSkill && (
         <AddSkillForm
           departments={departments}
+          defaultDepartmentId={addSkillFor}
           error={addSkillError}
+          saving={savingSkill}
           onSubmit={handleAddSkill}
           onClose={() => {
             setShowAddSkill(false)
+            setAddSkillFor(null)
             setAddSkillError(null)
+          }}
+        />
+      )}
+
+      {showAddMember && (
+        <AddMemberForm
+          error={addMemberError}
+          saving={addingMember}
+          onSubmit={handleAddMember}
+          onClose={() => {
+            setShowAddMember(false)
+            setAddMemberError(null)
+          }}
+        />
+      )}
+
+      {showAddCategory && (
+        <AddCategoryForm
+          error={addCategoryError}
+          saving={savingCategory}
+          onSubmit={handleAddCategory}
+          onClose={() => {
+            setShowAddCategory(false)
+            setAddCategoryError(null)
           }}
         />
       )}

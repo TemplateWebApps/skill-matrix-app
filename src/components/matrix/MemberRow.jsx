@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import RatingCell from './RatingCell'
 
-export default function MemberRow({ member, skills, ratingsMap, onRename, onRenameCommit, onRemove, onSetLevel }) {
+export default function MemberRow({ member, skills, emptyDepartments = [], ratingsMap, onRename, onRenameCommit, onRemove, onSetLevel }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: member.id,
     data: { type: 'member' },
@@ -65,6 +65,12 @@ export default function MemberRow({ member, skills, ratingsMap, onRename, onRena
           </Fragment>
         )
       })}
+      {/* Keep the body aligned with the header's empty-category and
+          add-category columns. */}
+      {emptyDepartments.map((dept) => (
+        <td key={dept.id} className="empty-dept-cell" />
+      ))}
+      <td className="add-category-cell" />
     </tr>
   )
 }

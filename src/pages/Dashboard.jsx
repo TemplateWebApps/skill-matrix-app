@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
-import { fetchMatrix } from '../lib/matrixApi'
+import { useWorkspaceData } from '../contexts/WorkspaceDataContext'
 import { computeInsights } from '../lib/insights'
 import { levelClass } from '../lib/levels'
 import './dashboard.css'
@@ -58,29 +58,18 @@ function RankedList({ title, hint, rows, emptyText }) {
 
 export default function Dashboard() {
   const { workspace } = useAuth()
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // Shares the Matrix tab's already-loaded data instead of fetching its own
+  // copy — that second fetch was what made switching tabs feel slow.
+  const { departments, skills, members, ratings, loading, reload } = useWorkspaceData()
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
 
-  const load = useCallback(async () => {
-    if (!workspace?.id) return
-    setLoading(true)
-    try {
-      setData(await fetchMatrix(workspace.id))
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [workspace?.id])
+  const load = reload
 
-  useEffect(() => {
-    load()
-  }, [load])
-
-  const insights = useMemo(() => (data ? computeInsights(data) : null), [data])
+  const insights = useMemo(
+    () => computeInsights({ departments, skills, members, ratings }),
+    [departments, skills, members, ratings],
+  )
 
   async function loadSampleData() {
     setBusy(true)

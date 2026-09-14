@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { WorkspaceDataProvider } from '../contexts/WorkspaceDataContext'
 
 export default function AppLayout() {
   const { workspace, workspaces, switchWorkspace, user, signOut } = useAuth()
@@ -44,7 +45,9 @@ export default function AppLayout() {
         </div>
       </header>
       <main className="app-content">
-        <Outlet />
+        <WorkspaceDataProvider>
+          <Outlet />
+        </WorkspaceDataProvider>
       </main>
     </div>
   )

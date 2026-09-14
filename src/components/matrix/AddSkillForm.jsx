@@ -1,12 +1,14 @@
 import { useState } from 'react'
 
-export default function AddSkillForm({ departments, error, onSubmit, onClose }) {
+export default function AddSkillForm({ departments, defaultDepartmentId, error, saving, onSubmit, onClose }) {
   const [name, setName] = useState('')
   // A brand-new workspace has no departments yet, so start on "new department"
   // rather than an empty value the <select> can't match — otherwise the
   // dropdown reads "+ New department…" while the name field stays hidden, and
   // saving sends an empty department id.
-  const [departmentId, setDepartmentId] = useState(departments[0]?.id ?? '__new__')
+  const [departmentId, setDepartmentId] = useState(
+    defaultDepartmentId ?? departments[0]?.id ?? '__new__',
+  )
   const [newDepartment, setNewDepartment] = useState('')
   const isNewDepartment = departmentId === '__new__' || departments.length === 0
 
@@ -31,27 +33,34 @@ export default function AddSkillForm({ departments, error, onSubmit, onClose }) 
           <input value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
         </label>
         <label>
-          Department
+          Category
           <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
             {departments.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
               </option>
             ))}
-            <option value="__new__">+ New department…</option>
+            <option value="__new__">+ New category…</option>
           </select>
         </label>
         {isNewDepartment && (
           <label>
-            New department name
-            <input value={newDepartment} onChange={(e) => setNewDepartment(e.target.value)} required />
+            New category name
+            <input
+              value={newDepartment}
+              onChange={(e) => setNewDepartment(e.target.value)}
+              maxLength={80}
+              required
+            />
           </label>
         )}
         <div className="modal-actions">
           <button type="button" className="secondary" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit">Add skill</button>
+          <button type="submit" disabled={saving || !name.trim()}>
+            {saving ? 'Adding…' : 'Add skill'}
+          </button>
         </div>
       </form>
     </div>

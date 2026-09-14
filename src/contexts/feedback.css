@@ -1,0 +1,67 @@
+.confirm-card {
+  max-width: 380px;
+}
+
+.confirm-message {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--sm-text-dim, #5a6478);
+}
+
+.modal-actions button.danger {
+  background: #c62f28;
+  color: white;
+  border: none;
+}
+
+.modal-actions button.danger:hover {
+  background: #a92722;
+}
+
+/* ---- toasts ---- */
+
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.toast {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 8px;
+  background: #122a54;
+  color: white;
+  box-shadow: 0 8px 20px rgba(18, 42, 84, 0.28);
+  animation: toast-in 160ms ease-out;
+}
+
+.toast-danger {
+  background: #c62f28;
+}
+
+.toast-success {
+  background: #23694c;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

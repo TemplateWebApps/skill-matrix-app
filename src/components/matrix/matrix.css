@@ -93,6 +93,7 @@
   padding: 0;
 }
 
+/* sticky is a positioned value, so it already anchors the absolute "+" inside */
 .pinned-corner {
   position: sticky;
   left: 0;
@@ -107,14 +108,119 @@
   font-size: 12px;
 }
 
+.pinned-corner .corner-label {
+  display: block;
+}
+
+/* The + sits with the column it creates rows in, rather than only in the
+   toolbar far away from the grid. */
+.corner-add,
+.band-add {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.corner-add:hover,
+.band-add:hover {
+  background: white;
+  color: var(--sm-navy);
+}
+
 .band-header {
-  padding: 6px 8px !important;
+  position: relative;
+  padding: 6px 22px 6px 8px !important;
   color: white;
   font-size: 10.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-align: center;
+}
+
+.band-add {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+}
+
+/* A category with no skills in it yet still shows its bar. */
+.empty-dept {
+  min-width: 86px;
+  vertical-align: middle;
+}
+
+.empty-dept-add {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--sm-border);
+  background: white;
+  color: var(--sm-text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.empty-dept-add:hover {
+  border-color: var(--sm-navy);
+  color: var(--sm-navy);
+}
+
+.empty-dept-cell {
+  background: #fbfcfe;
+}
+
+.add-category-col {
+  background: white;
+  vertical-align: middle;
+  padding: 6px 10px !important;
+  min-width: 108px;
+}
+
+.add-category-btn {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px dashed var(--sm-border);
+  background: white;
+  color: var(--sm-text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-category-btn:hover {
+  border-color: var(--sm-navy);
+  color: var(--sm-navy);
+}
+
+.add-category-cell {
+  background: #fbfcfe;
+}
+
+.label-optional {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--sm-text-dim);
 }
 
 .band-0 { background: #534ab7; }

@@ -20,10 +20,21 @@ export async function fetchMatrix(workspaceId) {
   }
 }
 
-export async function addMember(workspaceId, sortOrder) {
+export async function addMember(workspaceId, sortOrder, { name = 'New member', role = '' } = {}) {
   const { data, error } = await supabase
     .from('members')
-    .insert({ workspace_id: workspaceId, name: 'New member', role: '', sort_order: sortOrder })
+    .insert({ workspace_id: workspaceId, name, role, sort_order: sortOrder })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function addDepartment(workspaceId, name, existingDepartments) {
+  const maxSort = existingDepartments.reduce((max, d) => Math.max(max, d.sort_order ?? 0), -1)
+  const { data, error } = await supabase
+    .from('departments')
+    .insert({ workspace_id: workspaceId, name: name.trim(), sort_order: maxSort + 1 })
     .select()
     .single()
   if (error) throw error
@@ -92,10 +103,14 @@ export async function addSkill(workspaceId, departmentId, name, allSkills) {
   if (insertError) throw insertError
 
   // reorderSkills upserts whole rows, so hand it the real ones.
-  const finalOrder = newOrder.map((s) => (s.id === '__new__' ? created : s))
+  const finalOrder = newOrder
+    .map((s) => (s.id === '__new__' ? created : s))
+    .map((s, i) => ({ ...s, sort_order: i }))
   await reorderSkills(finalOrder)
 
-  return created
+  // Hand back the finished order too, so callers can update their state
+  // directly instead of refetching the whole workspace.
+  return { created, order: finalOrder }
 }
 
 export async function updateSkill(id, patch) {
