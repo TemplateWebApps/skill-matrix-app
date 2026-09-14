@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useFeedback } from '../contexts/FeedbackContext'
 import { supabase } from '../lib/supabaseClient'
 import './team.css'
 
 export default function Team() {
   const { workspace, canInvite, user, refreshWorkspaces } = useAuth()
+  const { confirm, toast } = useFeedback()
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -68,9 +70,12 @@ export default function Team() {
   }
 
   async function removeMember(member) {
-    const ok = window.confirm(
-      `Remove ${member.email} from ${workspace.name}? They'll lose access immediately.`,
-    )
+    const ok = await confirm({
+      title: `Remove ${member.email}?`,
+      message: `They'll lose access to ${workspace.name} immediately. The matrix data itself isn't affected.`,
+      confirmLabel: 'Remove',
+      destructive: true,
+    })
     if (!ok) return
 
     setError(null)
@@ -85,6 +90,7 @@ export default function Team() {
       return
     }
     await load()
+    toast(`${member.email} removed`)
   }
 
   async function copyLink() {

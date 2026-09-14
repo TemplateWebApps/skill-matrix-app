@@ -62,6 +62,9 @@ export default function Matrix() {
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [addCategoryError, setAddCategoryError] = useState(null)
   const [savingCategory, setSavingCategory] = useState(false)
+  // Which rating popover is open, held once for the whole grid rather than in
+  // every cell. Format: "<memberId>:<skillId>:<field>".
+  const [openCellKey, setOpenCellKey] = useState(null)
   const [showManage, setShowManage] = useState(false)
   const [manageError, setManageError] = useState(null)
   const [addingMember, setAddingMember] = useState(false)
@@ -72,13 +75,33 @@ export default function Matrix() {
   // Last name actually saved for each member, so a cleared field can be put
   // back without a round trip.
   const savedMemberNames = useRef(new Map())
+  const membersRef = useRef([])
 
+  const workspaceId = workspace?.id
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
-  // Keep the "last saved name" map in step with whatever the shared store holds.
+  // Keep the "last saved name" map and the rollback snapshot in step with
+  // whatever the shared store holds.
   useEffect(() => {
     savedMemberNames.current = new Map(members.map((m) => [m.id, m.name]))
+    membersRef.current = members
   }, [members])
+
+  // One listener for the whole grid instead of one per open cell. A mousedown
+  // inside any cell is left alone so the button's own click can toggle it.
+  useEffect(() => {
+    if (!openCellKey) return
+    const onDown = (e) => {
+      if (!e.target.closest?.('.rating-cell')) setOpenCellKey(null)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [openCellKey])
+
+  const handleToggleCell = useCallback((memberId, skillId, field) => {
+    const key = `${memberId}:${skillId}:${field}`
+    setOpenCellKey((open) => (open === key ? null : key))
+  }, [])
 
   const ratingsMap = useMemo(() => {
     const map = new Map()
@@ -180,49 +203,59 @@ export default function Matrix() {
     }
   }
 
-  function handleRenameLocal(id, patch) {
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)))
-  }
+  const handleRenameLocal = useCallback(
+    (id, patch) => {
+      setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)))
+    },
+    [setMembers],
+  )
 
-  async function handleRenameCommit(id, patch) {
-    // A blank name leaves a row nobody can identify or search for, so put back
-    // what was there rather than saving nothing.
-    if ('name' in patch && !patch.name.trim()) {
-      const saved = savedMemberNames.current.get(id)
-      setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, name: saved ?? 'Unnamed' } : m)))
-      return
-    }
+  const handleRenameCommit = useCallback(
+    async (id, patch) => {
+      // A blank name leaves a row nobody can identify or search for, so put
+      // back what was there rather than saving nothing.
+      if ('name' in patch && !patch.name.trim()) {
+        const saved = savedMemberNames.current.get(id)
+        setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, name: saved ?? 'Unnamed' } : m)))
+        return
+      }
 
-    const patchToSave = 'name' in patch ? { name: patch.name.trim() } : patch
-    if ('name' in patchToSave) savedMemberNames.current.set(id, patchToSave.name)
+      const patchToSave = 'name' in patch ? { name: patch.name.trim() } : patch
+      if ('name' in patchToSave) savedMemberNames.current.set(id, patchToSave.name)
 
-    try {
-      await updateMember(id, patchToSave)
-    } catch (err) {
-      setError(err.message)
-    }
-  }
+      try {
+        await updateMember(id, patchToSave)
+      } catch (err) {
+        setError(err.message)
+      }
+    },
+    [setMembers, setError],
+  )
 
-  async function handleRemoveMember(id) {
-    const member = members.find((m) => m.id === id)
-    const ok = await confirm({
-      title: `Remove ${member?.name || 'this person'}?`,
-      message: 'Their ratings across every skill will be deleted too. This cannot be undone.',
-      confirmLabel: 'Remove',
-      destructive: true,
-    })
-    if (!ok) return
+  // Takes the name as an argument rather than looking it up in `members`, so
+  // its identity stays stable and the memoised rows actually skip re-rendering.
+  const handleRemoveMember = useCallback(
+    async (id, name) => {
+      const ok = await confirm({
+        title: `Remove ${name || 'this person'}?`,
+        message: 'Their ratings across every skill will be deleted too. This cannot be undone.',
+        confirmLabel: 'Remove',
+        destructive: true,
+      })
+      if (!ok) return
 
-    const prev = members
-    setMembers((p) => p.filter((m) => m.id !== id))
-    try {
-      await removeMember(id)
-      toast(`${member?.name || 'Person'} removed`)
-    } catch (err) {
-      setError(err.message)
-      setMembers(prev)
-    }
-  }
+      const previous = membersRef.current
+      setMembers((p) => p.filter((m) => m.id !== id))
+      try {
+        await removeMember(id)
+        toast(`${name || 'Person'} removed`)
+      } catch (err) {
+        setError(err.message)
+        setMembers(previous)
+      }
+    },
+    [confirm, toast, setMembers, setError],
+  )
 
   async function handleAddSkill({ name, departmentId, newDepartmentName }) {
     setAddSkillError(null)
@@ -340,20 +373,29 @@ export default function Matrix() {
     }
   }
 
-  async function handleSetLevel(memberId, skillId, field, value) {
-    setRatings((prev) => {
-      const existing = prev.find((r) => r.member_id === memberId && r.skill_id === skillId)
-      if (existing) {
-        return prev.map((r) => (r === existing ? { ...r, [field]: value } : r))
+  // Stable identity so memoised rows and cells aren't re-rendered by every
+  // unrelated state change in this component.
+  const handlePickLevel = useCallback(
+    async (memberId, skillId, field, value) => {
+      setOpenCellKey(null)
+      setRatings((prev) => {
+        const existing = prev.find((r) => r.member_id === memberId && r.skill_id === skillId)
+        if (existing) {
+          return prev.map((r) => (r === existing ? { ...r, [field]: value } : r))
+        }
+        return [
+          ...prev,
+          { member_id: memberId, skill_id: skillId, current_level: null, target_level: null, [field]: value },
+        ]
+      })
+      try {
+        await setRatingLevel(workspaceId, memberId, skillId, field, value)
+      } catch (err) {
+        setError(err.message)
       }
-      return [...prev, { member_id: memberId, skill_id: skillId, current_level: null, target_level: null, [field]: value }]
-    })
-    try {
-      await setRatingLevel(workspace.id, memberId, skillId, field, value)
-    } catch (err) {
-      setError(err.message)
-    }
-  }
+    },
+    [workspaceId, setRatings, setError],
+  )
 
   function handleDragEnd(event) {
     const { active, over } = event
@@ -521,10 +563,12 @@ export default function Matrix() {
                     skills={visibleSkills}
                     emptyDepartments={emptyDepartments}
                     ratingsMap={ratingsMap}
+                    rowOpenKey={openCellKey?.startsWith(`${member.id}:`) ? openCellKey : null}
+                    onToggleCell={handleToggleCell}
+                    onPickLevel={handlePickLevel}
                     onRename={handleRenameLocal}
                     onRenameCommit={handleRenameCommit}
                     onRemove={handleRemoveMember}
-                    onSetLevel={handleSetLevel}
                   />
                 ))}
               </SortableContext>

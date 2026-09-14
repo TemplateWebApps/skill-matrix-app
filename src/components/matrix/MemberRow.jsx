@@ -1,9 +1,20 @@
-import { Fragment } from 'react'
+import { Fragment, memo } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import RatingCell from './RatingCell'
 
-export default function MemberRow({ member, skills, emptyDepartments = [], ratingsMap, onRename, onRenameCommit, onRemove, onSetLevel }) {
+function MemberRow({
+  member,
+  skills,
+  emptyDepartments = [],
+  ratingsMap,
+  rowOpenKey,
+  onToggleCell,
+  onPickLevel,
+  onRename,
+  onRenameCommit,
+  onRemove,
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: member.id,
     data: { type: 'member' },
@@ -40,26 +51,43 @@ export default function MemberRow({ member, skills, emptyDepartments = [], ratin
             onBlur={(e) => onRenameCommit(member.id, { role: e.target.value })}
           />
         </div>
-        <button type="button" className="member-remove" title="Remove" onClick={() => onRemove(member.id)}>
+        <button
+          type="button"
+          className="member-remove"
+          title="Remove"
+          onClick={() => onRemove(member.id, member.name)}
+        >
           ×
         </button>
       </td>
       {skills.map((skill) => {
         const rating = ratingsMap.get(`${member.id}:${skill.id}`)
+        const curKey = `${member.id}:${skill.id}:current_level`
+        const tarKey = `${member.id}:${skill.id}:target_level`
         return (
           <Fragment key={skill.id}>
             <td className="cell-cur">
               <RatingCell
+                memberId={member.id}
+                skillId={skill.id}
+                field="current_level"
                 label="Current"
                 value={rating?.current_level ?? null}
-                onChange={(v) => onSetLevel(member.id, skill.id, 'current_level', v)}
+                isOpen={rowOpenKey === curKey}
+                onToggle={onToggleCell}
+                onPick={onPickLevel}
               />
             </td>
             <td className="cell-tar">
               <RatingCell
+                memberId={member.id}
+                skillId={skill.id}
+                field="target_level"
                 label="Target"
                 value={rating?.target_level ?? null}
-                onChange={(v) => onSetLevel(member.id, skill.id, 'target_level', v)}
+                isOpen={rowOpenKey === tarKey}
+                onToggle={onToggleCell}
+                onPick={onPickLevel}
               />
             </td>
           </Fragment>
@@ -74,3 +102,5 @@ export default function MemberRow({ member, skills, emptyDepartments = [], ratin
     </tr>
   )
 }
+
+export default memo(MemberRow)
