@@ -37,6 +37,25 @@ export function computeInsights({ departments, skills, members, ratings }) {
   const targeted = live.filter((r) => r.target_level != null)
   const bothSet = live.filter((r) => r.current_level != null && r.target_level != null)
 
+  // Bucket the ratings once up front. The per-skill and per-person sections
+  // below used to scan every rating again for each skill and each person,
+  // which is fine for a small team but becomes skills x ratings work — on a
+  // large matrix that's hundreds of thousands of comparisons per section.
+  const groupBy = (rows, key) => {
+    const map = new Map()
+    for (const row of rows) {
+      const bucket = map.get(row[key])
+      if (bucket) bucket.push(row)
+      else map.set(row[key], [row])
+    }
+    return map
+  }
+  const departmentNameById = new Map(departments.map((d) => [d.id, d.name]))
+  const ratedBySkill = groupBy(rated, 'skill_id')
+  const ratedByMember = groupBy(rated, 'member_id')
+  const targetedBySkill = groupBy(targeted, 'skill_id')
+  const bothBySkill = groupBy(bothSet, 'skill_id')
+
   const avgCurrent = mean(rated.map((r) => r.current_level))
   const avgTarget = mean(targeted.map((r) => r.target_level))
   const avgGap = mean(bothSet.map((r) => Math.max(0, r.target_level - r.current_level)))
@@ -58,15 +77,13 @@ export function computeInsights({ departments, skills, members, ratings }) {
   // ---- per department --------------------------------------------------------
   const departmentCoverage = departments
     .map((dept) => {
-      const deptSkillIds = new Set(
-        skills.filter((s) => s.department_id === dept.id).map((s) => s.id),
-      )
-      const deptRated = rated.filter((r) => deptSkillIds.has(r.skill_id))
-      const deptTargeted = targeted.filter((r) => deptSkillIds.has(r.skill_id))
+      const deptSkills = skills.filter((s) => s.department_id === dept.id)
+      const deptRated = deptSkills.flatMap((s) => ratedBySkill.get(s.id) ?? [])
+      const deptTargeted = deptSkills.flatMap((s) => targetedBySkill.get(s.id) ?? [])
       return {
         id: dept.id,
         name: dept.name,
-        skillCount: deptSkillIds.size,
+        skillCount: deptSkills.length,
         current: round1(mean(deptRated.map((r) => r.current_level))),
         target: round1(mean(deptTargeted.map((r) => r.target_level))),
         ratedCount: deptRated.length,
@@ -77,7 +94,7 @@ export function computeInsights({ departments, skills, members, ratings }) {
 
   // ---- per person ------------------------------------------------------------
   const perMember = members.map((m) => {
-    const theirs = rated.filter((r) => r.member_id === m.id)
+    const theirs = ratedByMember.get(m.id) ?? []
     return {
       id: m.id,
       name: m.name,
@@ -106,12 +123,12 @@ export function computeInsights({ departments, skills, members, ratings }) {
 
   // ---- per skill -------------------------------------------------------------
   const perSkill = skills.map((s) => {
-    const theirs = rated.filter((r) => r.skill_id === s.id)
-    const gaps = bothSet.filter((r) => r.skill_id === s.id)
+    const theirs = ratedBySkill.get(s.id) ?? []
+    const gaps = bothBySkill.get(s.id) ?? []
     return {
       id: s.id,
       name: s.name,
-      departmentName: departments.find((d) => d.id === s.department_id)?.name ?? '—',
+      departmentName: departmentNameById.get(s.department_id) ?? '—',
       ratedCount: theirs.length,
       current: mean(theirs.map((r) => r.current_level)),
       gap: mean(gaps.map((r) => Math.max(0, r.target_level - r.current_level))),
