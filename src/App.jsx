@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AppLayout from './pages/AppLayout'
@@ -10,10 +11,14 @@ import Dashboard from './pages/Dashboard'
 import AcceptInvite from './pages/AcceptInvite'
 import './App.css'
 
+// Signed in, go straight to work. Signed out, this is the public front door —
+// it used to redirect to a bare login form, so anyone arriving from a link had
+// no idea what the product was.
 function Home() {
   const { session, loading } = useAuth()
   if (loading) return <div className="page-center">Loading…</div>
-  return <Navigate to={session ? '/app' : '/login'} replace />
+  if (session) return <Navigate to="/app" replace />
+  return <Landing />
 }
 
 function App() {

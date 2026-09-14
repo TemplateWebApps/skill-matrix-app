@@ -1,0 +1,488 @@
+/* Public marketing page. Fixed light theme to match the app itself, and built
+   mobile-first — this is the one page people are most likely to open on a
+   phone, from a link someone sent them. */
+
+.landing {
+  --navy: #122a54;
+  --navy-2: #1c3d70;
+  --ink: #1c2536;
+  --ink-dim: #5a6478;
+  --page: #f4f6fb;
+  --line: #cfd5e2;
+
+  background: var(--page);
+  color: var(--ink);
+  min-height: 100svh;
+  width: 100%;
+}
+
+.landing a {
+  color: inherit;
+}
+
+/* ---- nav ---- */
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--navy);
+  flex-wrap: wrap;
+}
+
+.landing-brand {
+  font-family: var(--heading);
+  font-weight: 600;
+  font-size: 18px;
+  color: white;
+}
+
+.landing-nav nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.landing-nav nav a {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c6d3ec;
+  text-decoration: none;
+  padding: 7px 10px;
+  border-radius: 7px;
+}
+
+.landing-nav nav a:hover {
+  color: white;
+}
+
+.landing-nav .nav-login {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.landing-nav .nav-cta {
+  background: white;
+  color: var(--navy);
+}
+
+@media (max-width: 560px) {
+  .landing-nav nav a[href^='#'] {
+    display: none; /* keep the two actions that matter on a narrow screen */
+  }
+}
+
+/* ---- shared bits ---- */
+
+.landing h2 {
+  font-family: var(--heading);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+
+.landing h3 {
+  font-family: var(--heading);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+
+.btn-primary,
+.btn-ghost {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px 18px;
+  border-radius: 9px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Scoped with .landing so these beat the blanket `.landing a { color: inherit }`
+   above — without it that rule wins on specificity and paints the primary
+   button's label the same navy as its own background. */
+.landing .btn-primary {
+  background: var(--navy);
+  color: white;
+  border: 1px solid var(--navy);
+}
+
+.landing .btn-primary:hover {
+  background: var(--navy-2);
+}
+
+.landing .btn-ghost {
+  background: white;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.btn-lg {
+  font-size: 15px;
+  padding: 13px 26px;
+}
+
+/* ---- hero ---- */
+
+.hero {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 20px 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr 1fr;
+    padding-top: 64px;
+    gap: 44px;
+  }
+}
+
+.hero .eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  margin: 0 0 12px;
+}
+
+.hero h1 {
+  font-family: var(--heading);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+@media (min-width: 900px) {
+  .hero h1 {
+    font-size: 42px;
+  }
+}
+
+.hero-sub {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+  margin: 0 0 22px;
+  max-width: 48ch;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hero-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+
+/* ---- the sample grid ---- */
+
+.demo {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 10px 30px rgba(18, 42, 84, 0.08);
+}
+
+.demo-scroll {
+  overflow-x: auto;
+}
+
+.demo-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11.5px;
+}
+
+.demo-table th,
+.demo-table td {
+  border: 1px solid var(--line);
+  padding: 0;
+}
+
+.demo-corner {
+  background: var(--navy);
+  color: white;
+  text-align: left;
+  padding: 6px 8px !important;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 118px;
+}
+
+.demo-band {
+  color: white;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 5px 6px !important;
+  text-align: center;
+}
+
+.demo-band-0 { background: #534ab7; }
+.demo-band-1 { background: #0f6e56; }
+.demo-band-2 { background: #185fa5; }
+
+.demo-skill {
+  background: white;
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 10px;
+  padding: 6px 4px !important;
+  text-align: center;
+  min-width: 54px;
+}
+
+.demo-person {
+  padding: 6px 8px !important;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.demo-person strong {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.demo-person span {
+  font-size: 9.5px;
+  color: var(--ink-dim);
+}
+
+.demo-cell {
+  text-align: center;
+  padding: 4px !important;
+}
+
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: white;
+}
+
+/* same scale, same colours as the product */
+.demo .lvl-none { background: #8a94a6; }
+.demo .lvl-1 { background: #e0362f; }
+.demo .lvl-2 { background: #eaa315; }
+.demo .lvl-3 { background: #3fb984; }
+.demo .lvl-4 { background: #3b62d6; }
+
+.demo-legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.demo-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---- how it works ---- */
+
+.how {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 56px 20px 8px;
+}
+
+.how-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+@media (min-width: 760px) {
+  .how-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.how-grid article {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.how-grid p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
+
+/* ---- pricing ---- */
+
+.pricing {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 56px 20px 8px;
+}
+
+.pricing-sub {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+
+.tiers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 820px) {
+  .tiers {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+  }
+}
+
+.tier {
+  position: relative;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tier-featured {
+  border-color: var(--navy);
+  border-width: 2px;
+}
+
+.tier-flag {
+  position: absolute;
+  top: -11px;
+  left: 22px;
+  background: var(--navy);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.tier-price {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.tier-price span {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+
+.tier-blurb {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.tier ul {
+  list-style: none;
+  margin: 4px 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+}
+
+.tier li {
+  padding-left: 20px;
+  position: relative;
+}
+
+.tier li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #23694c;
+  font-weight: 700;
+}
+
+.tier a {
+  text-align: center;
+  margin-top: auto;
+}
+
+/* ---- closer + footer ---- */
+
+.closer {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 64px 20px;
+  text-align: center;
+}
+
+.closer p {
+  margin: 0 0 20px;
+  font-size: 14.5px;
+  color: var(--ink-dim);
+}
+
+.landing-footer {
+  border-top: 1px solid var(--line);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  max-width: 1080px;
+  margin: 0 auto;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+
+.landing-footer a {
+  font-weight: 600;
+  text-decoration: none;
+}
