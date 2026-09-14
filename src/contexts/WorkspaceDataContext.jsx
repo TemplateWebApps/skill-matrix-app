@@ -16,7 +16,7 @@ const EMPTY = { departments: [], skills: [], members: [], ratings: [] }
  * hiding what's already on screen.
  */
 export function WorkspaceDataProvider({ children }) {
-  const { workspace } = useAuth()
+  const { workspace, initialData, consumeInitialData } = useAuth()
   const workspaceId = workspace?.id ?? null
 
   const [data, setData] = useState(EMPTY)
@@ -52,11 +52,21 @@ export function WorkspaceDataProvider({ children }) {
       setLoadedFor(null)
       return
     }
-    if (workspaceId !== loadedFor) {
-      setData(EMPTY) // don't show the previous workspace's rows while loading
-      load(workspaceId)
+    if (workspaceId === loadedFor) return
+
+    // The startup request already brought these rows back with the workspace
+    // list — use them instead of asking again.
+    if (initialData && initialData.workspaceId === workspaceId) {
+      const { workspaceId: _id, ...rows } = initialData
+      setData(rows)
+      setLoadedFor(workspaceId)
+      consumeInitialData()
+      return
     }
-  }, [workspaceId, loadedFor, load])
+
+    setData(EMPTY) // don't show the previous workspace's rows while loading
+    load(workspaceId)
+  }, [workspaceId, loadedFor, load, initialData, consumeInitialData])
 
   const value = useMemo(
     () => ({

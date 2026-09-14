@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(undefined)
@@ -49,13 +49,58 @@ export function AuthProvider({ children }) {
   const [workspaces, setWorkspaces] = useState([])
   const [workspaceId, setWorkspaceId] = useState(() => readStoredWorkspaceId())
   const [loading, setLoading] = useState(true)
+  // Matrix rows that arrived with the startup request, waiting to be picked up
+  // by the data provider instead of being fetched a second time.
+  const [initialData, setInitialData] = useState(null)
 
-  const loadWorkspaces = useCallback(async (currentSession) => {
-    const list = await fetchWorkspaces(currentSession)
+  // getSession() and onAuthStateChange's INITIAL_SESSION both fire on startup,
+  // so the workspace list was being fetched twice, milliseconds apart. Claiming
+  // the user id synchronously before awaiting means whichever arrives second
+  // does nothing.
+  const loadedForUser = useRef(null)
+
+  const loadWorkspaces = useCallback(async (currentSession, { force = false } = {}) => {
+    const userId = currentSession?.user?.id ?? null
+
+    if (!userId) {
+      loadedForUser.current = null
+      setWorkspaces([])
+      setWorkspaceId(null)
+      setInitialData(null)
+      return []
+    }
+    if (!force && loadedForUser.current === userId) return null
+
+    loadedForUser.current = userId
+
+    // One request answers "which workspaces am I in?" and "what's in the one
+    // I'm opening?" — otherwise the second question can't even be asked until
+    // the first comes back.
+    const { data, error } = await supabase.rpc('get_workspace_bundle', {
+      p_workspace_id: readStoredWorkspaceId(),
+    })
+
+    if (error || !data) {
+      console.error('get_workspace_bundle failed, falling back', error)
+      const list = await fetchWorkspaces(currentSession)
+      setWorkspaces(list)
+      setWorkspaceId((current) =>
+        list.some((w) => w.id === current) ? current : (list[0]?.id ?? null),
+      )
+      return list
+    }
+
+    const list = data.workspaces ?? []
     setWorkspaces(list)
-    setWorkspaceId((current) => {
-      const stillValid = list.some((w) => w.id === current)
-      return stillValid ? current : (list[0]?.id ?? null)
+    setWorkspaceId(data.workspace_id ?? list[0]?.id ?? null)
+    // Hand the matrix rows straight to the data provider so it doesn't
+    // immediately fetch what we already have.
+    setInitialData({
+      workspaceId: data.workspace_id,
+      departments: data.departments ?? [],
+      skills: data.skills ?? [],
+      members: data.members ?? [],
+      ratings: data.ratings ?? [],
     })
     return list
   }, [])
@@ -98,7 +143,9 @@ export function AuthProvider({ children }) {
     canInvite: workspace?.role === 'owner' || workspace?.role === 'admin',
     loading,
     switchWorkspace,
-    refreshWorkspaces: () => loadWorkspaces(session),
+    initialData,
+    consumeInitialData: () => setInitialData(null),
+    refreshWorkspaces: () => loadWorkspaces(session, { force: true }),
     signOut: () => supabase.auth.signOut(),
   }
 
