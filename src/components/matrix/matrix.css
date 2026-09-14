@@ -81,7 +81,12 @@
   background: white;
 }
 
+/* Fixed layout with widths declared up front in a <colgroup>. With auto
+   layout the browser has to measure every cell in every column before it can
+   decide how wide each one is — on a full matrix that measuring pass cost
+   about 95ms on its own, and it grows with the number of cells. */
 .matrix-table {
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
   white-space: nowrap;
@@ -92,6 +97,12 @@
   border: 1px solid var(--sm-border);
   padding: 0;
 }
+
+/* Column widths for the fixed layout above. */
+.col-member { width: 190px; }
+.col-rating { width: 34px; }
+.col-empty-dept { width: 96px; }
+.col-add-category { width: 112px; }
 
 /* sticky is a positioned value, so it already anchors the absolute "+" inside */
 .pinned-corner {

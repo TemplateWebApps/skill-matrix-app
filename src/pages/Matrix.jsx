@@ -467,6 +467,19 @@ export default function Matrix() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="matrix-scroll">
           <table className="matrix-table">
+            <colgroup>
+              <col className="col-member" />
+              {visibleSkills.map((skill) => (
+                <Fragment key={skill.id}>
+                  <col className="col-rating" />
+                  <col className="col-rating" />
+                </Fragment>
+              ))}
+              {emptyDepartments.map((dept) => (
+                <col key={dept.id} className="col-empty-dept" />
+              ))}
+              <col className="col-add-category" />
+            </colgroup>
             <thead>
               <tr>
                 <th className="pinned-corner" rowSpan={3}>
