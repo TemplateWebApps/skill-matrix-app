@@ -32,10 +32,12 @@ import AddSkillForm from '../components/matrix/AddSkillForm'
 import AddMemberForm from '../components/matrix/AddMemberForm'
 import AddCategoryForm from '../components/matrix/AddCategoryForm'
 import ManagePanel from '../components/matrix/ManagePanel'
+import UpgradeDialog from '../components/UpgradeDialog'
+import { isAtLimit } from '../lib/plans'
 import '../components/matrix/matrix.css'
 
 export default function Matrix() {
-  const { workspace } = useAuth()
+  const { workspace, plan } = useAuth()
   const { confirm, toast } = useFeedback()
   const {
     departments,
@@ -65,6 +67,9 @@ export default function Matrix() {
   // Which rating popover is open, held once for the whole grid rather than in
   // every cell. Format: "<memberId>:<skillId>:<field>".
   const [openCellKey, setOpenCellKey] = useState(null)
+  // Set to { kind, count } when someone asks for something their plan doesn't
+  // cover, which swaps the add form for an explanation of why not.
+  const [limitHit, setLimitHit] = useState(null)
   const [showManage, setShowManage] = useState(false)
   const [manageError, setManageError] = useState(null)
   const [addingMember, setAddingMember] = useState(false)
@@ -165,6 +170,43 @@ export default function Matrix() {
     setShowAddSkill(true)
   }
 
+  const atMemberLimit = isAtLimit(plan, 'members', members.length)
+  const atCategoryLimit = isAtLimit(plan, 'categories', departments.length)
+
+  // Every "add" entry point goes through one of these two, so the explanation
+  // is the same whether you came from the toolbar, the corner + or the column.
+  function requestAddMember() {
+    if (atMemberLimit) {
+      setLimitHit({ kind: 'members', count: members.length })
+      return
+    }
+    setAddMemberError(null)
+    setShowAddMember(true)
+  }
+
+  function requestAddCategory() {
+    if (atCategoryLimit) {
+      setLimitHit({ kind: 'categories', count: departments.length })
+      return
+    }
+    setAddCategoryError(null)
+    setShowAddCategory(true)
+  }
+
+  // The checks above are a courtesy — the database is what actually refuses.
+  // If it does (someone on a second device filled the last slot a moment ago),
+  // show the same explanation instead of a raw error.
+  function handleSaveError(err, setLocalError, kind, count) {
+    if (err?.hint === 'plan_limit') {
+      setShowAddMember(false)
+      setShowAddCategory(false)
+      setShowAddSkill(false)
+      setLimitHit({ kind, count })
+      return
+    }
+    setLocalError(err.message)
+  }
+
   async function handleAddMember({ name, role }) {
     // Guarded because impatient double-clicks used to fire several adds off the
     // same render, handing every new row an identical sort_order — which left
@@ -181,7 +223,7 @@ export default function Matrix() {
       setShowAddMember(false)
       toast(`${created.name} added`)
     } catch (err) {
-      setAddMemberError(err.message)
+      handleSaveError(err, setAddMemberError, 'members', members.length)
     } finally {
       addingMemberRef.current = false
       setAddingMember(false)
@@ -197,7 +239,7 @@ export default function Matrix() {
       setShowAddCategory(false)
       toast(`${created.name} added`)
     } catch (err) {
-      setAddCategoryError(err.message)
+      handleSaveError(err, setAddCategoryError, 'categories', departments.length)
     } finally {
       setSavingCategory(false)
     }
@@ -281,7 +323,9 @@ export default function Matrix() {
       setAddSkillFor(null)
       toast(`${created.name} added`)
     } catch (err) {
-      setAddSkillError(err.message)
+      // A new skill can drag a new category in with it, so this can trip the
+      // category limit even though skills themselves aren't limited.
+      handleSaveError(err, setAddSkillError, 'categories', departments.length)
     } finally {
       setSavingSkill(false)
     }
@@ -455,10 +499,7 @@ export default function Matrix() {
         departments={departments}
         departmentFilter={departmentFilter}
         onDepartmentFilterChange={setDepartmentFilter}
-        onAddMember={() => {
-          setAddMemberError(null)
-          setShowAddMember(true)
-        }}
+        onAddMember={requestAddMember}
         addingMember={addingMember}
         onAddSkill={() => openAddSkillFor(null)}
         onManage={() => setShowManage(true)}
@@ -487,11 +528,8 @@ export default function Matrix() {
                   <button
                     type="button"
                     className="corner-add"
-                    title="Add a team member"
-                    onClick={() => {
-                      setAddMemberError(null)
-                      setShowAddMember(true)
-                    }}
+                    title={atMemberLimit ? `${plan.name} plan limit reached` : 'Add a team member'}
+                    onClick={requestAddMember}
                   >
                     +
                   </button>
@@ -531,11 +569,8 @@ export default function Matrix() {
                   <button
                     type="button"
                     className="add-category-btn"
-                    title="Add a category"
-                    onClick={() => {
-                      setAddCategoryError(null)
-                      setShowAddCategory(true)
-                    }}
+                    title={atCategoryLimit ? `${plan.name} plan limit reached` : 'Add a category'}
+                    onClick={requestAddCategory}
                   >
                     + Category
                   </button>
@@ -593,6 +628,7 @@ export default function Matrix() {
       {showAddSkill && (
         <AddSkillForm
           departments={departments}
+          canAddCategory={!atCategoryLimit}
           defaultDepartmentId={addSkillFor}
           error={addSkillError}
           saving={savingSkill}
@@ -626,6 +662,15 @@ export default function Matrix() {
             setShowAddCategory(false)
             setAddCategoryError(null)
           }}
+        />
+      )}
+
+      {limitHit && (
+        <UpgradeDialog
+          plan={plan}
+          kind={limitHit.kind}
+          count={limitHit.count}
+          onClose={() => setLimitHit(null)}
         />
       )}
 

@@ -1,11 +1,47 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useFeedback } from '../contexts/FeedbackContext'
+import { useWorkspaceData } from '../contexts/WorkspaceDataContext'
 import { supabase } from '../lib/supabaseClient'
+import { LIMIT_LABEL, limitOf } from '../lib/plans'
+import UpgradeDialog from '../components/UpgradeDialog'
 import './team.css'
 
+// One row of "17 of 25 people", with a bar. A plan with no limit for this
+// thing shows the count on its own — a full-width bar next to the word
+// "unlimited" would be nonsense.
+function PlanMeter({ plan, kind, count }) {
+  const label = LIMIT_LABEL[kind]
+  const limit = limitOf(plan, kind)
+  const full = limit !== null && count >= limit
+  const filled = limit === null ? 0 : Math.min(100, Math.round((count / limit) * 100))
+
+  return (
+    <div>
+      <div className="plan-meter-label">
+        <strong>
+          {count} {count === 1 ? label.one : label.many}
+        </strong>
+        <span>{limit === null ? 'No limit' : `of ${limit}`}</span>
+      </div>
+      {limit !== null && (
+        <div className="plan-meter-track">
+          <div
+            className={full ? 'plan-meter-fill is-full' : 'plan-meter-fill'}
+            style={{ width: `${filled}%` }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Team() {
-  const { workspace, canInvite, user, refreshWorkspaces } = useAuth()
+  const { workspace, canInvite, user, refreshWorkspaces, plan } = useAuth()
+  // The matrix rows are already loaded for this workspace, so counting what
+  // the plan covers costs nothing.
+  const { members: people, departments } = useWorkspaceData()
+  const [limitHit, setLimitHit] = useState(null)
   const { confirm, toast } = useFeedback()
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -114,6 +150,47 @@ export default function Team() {
       </header>
 
       {error && <p className="auth-error">{error}</p>}
+
+      {plan.key !== 'unknown' && (
+        <section className="team-panel">
+          <h2>
+            Plan
+            <span className="plan-badge">{plan.name}</span>
+          </h2>
+          <p className="team-hint">
+            What this workspace can hold. Going over doesn&rsquo;t delete anything — it just stops
+            you adding more.
+          </p>
+          <div className="plan-usage">
+            <PlanMeter plan={plan} kind="members" count={people.length} />
+            <PlanMeter plan={plan} kind="categories" count={departments.length} />
+          </div>
+          {(limitOf(plan, 'members') !== null || limitOf(plan, 'categories') !== null) && (
+            <button
+              type="button"
+              className="plan-upgrade-btn"
+              onClick={() =>
+                setLimitHit(
+                  limitOf(plan, 'categories') !== null && departments.length >= limitOf(plan, 'categories')
+                    ? { kind: 'categories', count: departments.length }
+                    : { kind: 'members', count: people.length },
+                )
+              }
+            >
+              See upgrade options
+            </button>
+          )}
+        </section>
+      )}
+
+      {limitHit && (
+        <UpgradeDialog
+          plan={plan}
+          kind={limitHit.kind}
+          count={limitHit.count}
+          onClose={() => setLimitHit(null)}
+        />
+      )}
 
       {canInvite && (
         <section className="team-panel">

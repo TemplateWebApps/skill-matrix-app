@@ -1,6 +1,16 @@
 import { useState } from 'react'
 
-export default function AddSkillForm({ departments, defaultDepartmentId, error, saving, onSubmit, onClose }) {
+export default function AddSkillForm({
+  departments,
+  // False once the workspace has as many categories as its plan allows. The
+  // skill itself is still fine to add — it just has to join an existing one.
+  canAddCategory = true,
+  defaultDepartmentId,
+  error,
+  saving,
+  onSubmit,
+  onClose,
+}) {
   const [name, setName] = useState('')
   // A brand-new workspace has no departments yet, so start on "new department"
   // rather than an empty value the <select> can't match — otherwise the
@@ -40,7 +50,7 @@ export default function AddSkillForm({ departments, defaultDepartmentId, error, 
                 {d.name}
               </option>
             ))}
-            <option value="__new__">+ New category…</option>
+            {canAddCategory && <option value="__new__">+ New category…</option>}
           </select>
         </label>
         {isNewDepartment && (

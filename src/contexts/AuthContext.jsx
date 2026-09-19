@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { planOf } from '../lib/plans'
 
 const AuthContext = createContext(undefined)
 
@@ -30,7 +31,7 @@ async function fetchWorkspaces(currentSession) {
 
   const { data, error } = await supabase
     .from('workspace_members')
-    .select('role, created_at, workspaces (id, name, owner_id, created_at)')
+    .select('role, created_at, workspaces (id, name, owner_id, created_at, plan)')
     .eq('user_id', currentSession.user.id)
     .order('created_at')
 
@@ -140,6 +141,9 @@ export function AuthProvider({ children }) {
     workspace,
     workspaces,
     role: workspace?.role ?? null,
+    // What this workspace is allowed to hold. The database is what actually
+    // enforces it — this is here so screens can say so before someone tries.
+    plan: planOf(workspace),
     canInvite: workspace?.role === 'owner' || workspace?.role === 'admin',
     loading,
     switchWorkspace,

@@ -1,0 +1,164 @@
+/* The upgrade prompt. Uses the same .modal-backdrop / .modal-card shell as the
+   add forms so it feels like part of the app rather than an advert. */
+
+.upgrade-card {
+  /* The backdrop has no padding of its own, so on a narrow phone a plain
+     400px cap would put the card edge-to-edge against the screen. */
+  max-width: min(400px, calc(100vw - 32px));
+  gap: 12px;
+}
+
+.upgrade-plan {
+  align-self: flex-start;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--sm-text-dim);
+  border: 1px solid var(--sm-border);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.upgrade-card h2 {
+  font-family: var(--heading);
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.upgrade-body {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--sm-text-dim);
+}
+
+.upgrade-next {
+  border: 1px solid var(--sm-border);
+  border-radius: 9px;
+  padding: 12px 14px;
+  background: var(--sm-page-bg);
+}
+
+.upgrade-next-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.upgrade-next-head strong {
+  font-size: 14.5px;
+  color: var(--sm-text);
+}
+
+.upgrade-next-head span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sm-text);
+  white-space: nowrap;
+}
+
+.upgrade-next-head em {
+  font-style: normal;
+  font-weight: 600;
+  font-size: 10.5px;
+  color: var(--sm-text-dim);
+}
+
+.upgrade-next p {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--sm-text-dim);
+}
+
+.upgrade-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--sm-text-dim);
+}
+
+.upgrade-cta {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 7px;
+  border: 1px solid var(--sm-navy);
+  background: var(--sm-navy);
+  color: white;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.upgrade-cta:hover {
+  background: var(--sm-navy-2);
+}
+
+/* ---- the plan panel on the Team page ---- */
+
+.plan-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 4px 0 14px;
+}
+
+.plan-meter-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.plan-meter-label strong {
+  font-weight: 600;
+  color: var(--sm-text);
+}
+
+.plan-meter-label span {
+  color: var(--sm-text-dim);
+  font-size: 12.5px;
+}
+
+.plan-meter-track {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--sm-border);
+  overflow: hidden;
+}
+
+.plan-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sm-navy);
+}
+
+.plan-meter-fill.is-full {
+  background: #c0392f;
+}
+
+.plan-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--sm-navy);
+  color: white;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* .team-panel is a flex column, so a bare button stretches the full width of
+   the card. This is a secondary action — it shouldn't look like the primary
+   thing on the page. */
+.plan-upgrade-btn {
+  align-self: flex-start;
+}
