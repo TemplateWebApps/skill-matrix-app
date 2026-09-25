@@ -140,7 +140,7 @@ export default function Landing() {
               See how it works
             </a>
           </div>
-          <p className="hero-note">Free for up to 25 people. No card required.</p>
+          <p className="hero-note">Free while we&rsquo;re in beta. No card required.</p>
         </div>
         <DemoGrid />
       </section>
@@ -174,7 +174,13 @@ export default function Landing() {
 
       <section className="pricing" id="pricing">
         <h2>Pricing</h2>
-        <p className="pricing-sub">Start free. Pay per person only when your team outgrows it.</p>
+        {/* Every limit below is switched off for now (migration 009), so the
+            page has to say so rather than quietly not enforcing what it
+            advertises. */}
+        <p className="pricing-sub">
+          <strong className="pricing-beta">Everything is free during the beta</strong> — no limits,
+          no card. This is what it will cost when we launch, so you know what you&rsquo;re trying.
+        </p>
         <div className="tiers">
           {TIERS.map((t) => (
             <article key={t.name} className={t.featured ? 'tier tier-featured' : 'tier'}>

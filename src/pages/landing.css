@@ -486,3 +486,8 @@
   font-weight: 600;
   text-decoration: none;
 }
+
+.pricing-beta {
+  color: var(--ink);
+  font-weight: 700;
+}

@@ -237,3 +237,55 @@
   color: var(--text);
   margin: 0;
 }
+
+/* ---- phones ----------------------------------------------------------------
+   The topbar is one row of three columns, which at phone width pushed Log out
+   clean off the right-hand edge — the one control you can't do without. It
+   becomes two rows instead: identity and Log out on top, tabs stretched across
+   underneath. The email address is the longest thing in there and the least
+   useful, so it goes; the workspace name directly above already says which
+   account you're looking at. */
+@media (max-width: 720px) {
+  .app-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand user'
+      'nav   nav';
+    row-gap: 8px;
+  }
+
+  .app-brand {
+    grid-area: brand;
+    min-width: 0;
+  }
+
+  .app-title,
+  .app-workspace {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-title {
+    font-size: 15px;
+  }
+
+  .app-user {
+    grid-area: user;
+  }
+
+  .app-user > span {
+    display: none;
+  }
+
+  .app-nav {
+    grid-area: nav;
+    justify-self: stretch;
+  }
+
+  .app-nav a {
+    flex: 1;
+    text-align: center;
+    padding: 7px 8px;
+  }
+}
