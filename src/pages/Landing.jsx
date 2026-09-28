@@ -18,6 +18,8 @@ const DEMO = {
   ],
 }
 
+// Two tiers, one number between them: how many people fit in the matrix.
+// Everything else is the same on both, which is the point.
 const TIERS = [
   {
     name: 'Free',
@@ -26,7 +28,7 @@ const TIERS = [
     blurb: 'Enough to run a real team matrix.',
     features: [
       'Up to 25 people',
-      '1 category',
+      'Unlimited categories and skills',
       'Current and target levels',
       'Insights dashboard',
       'Invite your team',
@@ -35,22 +37,18 @@ const TIERS = [
     featured: false,
   },
   {
-    name: 'Plus',
-    price: '$5.99',
-    cadence: 'per person / month',
-    blurb: 'For when one category stops being enough.',
-    features: ['Up to 100 people', 'Unlimited categories', 'Everything in Free'],
-    cta: 'Start free',
-    featured: true,
-  },
-  {
     name: 'Unlimited',
     price: '$9.99',
-    cadence: 'per person / month',
-    blurb: 'For larger or multi-site teams.',
-    features: ['Unlimited people', 'Unlimited categories', 'Everything in Plus', 'Priority support'],
+    cadence: 'per month, whole team',
+    blurb: 'For when 25 people stops being enough.',
+    features: [
+      'Unlimited people',
+      'Everything in Free',
+      'One flat price — not per person',
+      'Priority support',
+    ],
     cta: 'Start free',
-    featured: false,
+    featured: true,
   },
 ]
 

@@ -369,9 +369,12 @@
   gap: 16px;
 }
 
+/* Two tiers, so they sit side by side and centred rather than stretching to
+   fill a width meant for three. */
 @media (min-width: 820px) {
   .tiers {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 320px));
+    justify-content: center;
     align-items: start;
   }
 }

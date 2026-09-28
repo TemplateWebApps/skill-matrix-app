@@ -2,9 +2,6 @@ import { useState } from 'react'
 
 export default function AddSkillForm({
   departments,
-  // False once the workspace has as many categories as its plan allows. The
-  // skill itself is still fine to add — it just has to join an existing one.
-  canAddCategory = true,
   defaultDepartmentId,
   error,
   saving,
@@ -50,7 +47,7 @@ export default function AddSkillForm({
                 {d.name}
               </option>
             ))}
-            {canAddCategory && <option value="__new__">+ New category…</option>}
+            <option value="__new__">+ New category…</option>
           </select>
         </label>
         {isNewDepartment && (

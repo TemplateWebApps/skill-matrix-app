@@ -1,10 +1,15 @@
 /**
  * What each plan allows.
  *
- * These numbers are a copy of the ones in 008_plan_gating.sql. The database is
- * the real gate — it has to be, because the browser can talk to it directly —
- * and this copy exists only so the app can warn someone before they run into a
- * wall rather than after. If you change a limit, change it in both places.
+ * One limit, one number: how many people you can put in the matrix. Everything
+ * else — categories, skills, invites, the dashboard — is the same on both
+ * plans, because a pricing page people have to study is a pricing page people
+ * leave.
+ *
+ * These numbers are a copy of the ones in the plan_limit() function in the
+ * database. The database is the real gate — it has to be, because the browser
+ * can talk to it directly — and this copy exists only so the app can warn
+ * someone before they hit a wall rather than after. Change one, change both.
  */
 
 export const PLANS = {
@@ -14,40 +19,35 @@ export const PLANS = {
     price: '$0',
     cadence: 'forever',
     members: 25,
-    categories: 1,
-  },
-  plus: {
-    key: 'plus',
-    name: 'Plus',
-    price: '$5.99',
-    cadence: 'per person / month',
-    members: 100,
-    categories: null,
   },
   unlimited: {
     key: 'unlimited',
     name: 'Unlimited',
     price: '$9.99',
-    cadence: 'per person / month',
+    cadence: 'per month',
     members: null,
-    categories: null,
   },
 }
 
-export const PLAN_ORDER = ['free', 'plus', 'unlimited']
+export const PLAN_ORDER = ['free', 'unlimited']
 
 // Until checkout exists, upgrading means someone changing the plan by hand.
 // Replace this with a real checkout link when billing is wired up.
 export const UPGRADE_EMAIL = 'templatewebapps@gmail.com'
 
-// A workspace loaded by an older copy of the app — or before the migration has
+// A workspace loaded by an older copy of the app — or before a migration has
 // run — has no plan on it at all. Guessing "free" there would lock people out
 // of their own data over a field that simply wasn't sent, so an unknown plan
 // is treated as unlimited and the database stays the judge.
-const UNKNOWN = { key: 'unknown', name: 'Unknown', members: null, categories: null }
+const UNKNOWN = { key: 'unknown', name: 'Unknown', members: null }
 
 export function planOf(workspace) {
-  return PLANS[workspace?.plan] ?? UNKNOWN
+  const key = workspace?.plan
+  // 'plus' was the middle tier before pricing was simplified to two. Any row
+  // still carrying it keeps everything it had rather than being read as a
+  // plan the app doesn't recognise.
+  if (key === 'plus') return PLANS.unlimited
+  return PLANS[key] ?? UNKNOWN
 }
 
 export function limitOf(plan, kind) {
@@ -64,11 +64,7 @@ export function remaining(plan, kind, count) {
   return limit === null ? null : Math.max(0, limit - count)
 }
 
-/**
- * The cheapest plan that would actually solve the limit you just hit — not
- * simply the next one up the list. Someone stuck on Free's single category
- * needs Plus; someone stuck on Plus's 100 people needs Unlimited.
- */
+/** The cheapest plan that lifts the limit you just hit. */
 export function upgradeFor(plan, kind) {
   const from = PLAN_ORDER.indexOf(plan?.key)
   if (from === -1) return null
@@ -82,5 +78,4 @@ export function upgradeFor(plan, kind) {
 
 export const LIMIT_LABEL = {
   members: { one: 'person', many: 'people', thing: 'team member' },
-  categories: { one: 'category', many: 'categories', thing: 'category' },
 }

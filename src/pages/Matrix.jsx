@@ -170,11 +170,12 @@ export default function Matrix() {
     setShowAddSkill(true)
   }
 
+  // How many people you can have is the only thing a plan limits. Categories,
+  // skills and invites are the same on every plan.
   const atMemberLimit = isAtLimit(plan, 'members', members.length)
-  const atCategoryLimit = isAtLimit(plan, 'categories', departments.length)
 
-  // Every "add" entry point goes through one of these two, so the explanation
-  // is the same whether you came from the toolbar, the corner + or the column.
+  // Every "add a person" entry point goes through here, so the explanation is
+  // the same whether you came from the toolbar or the corner +.
   function requestAddMember() {
     if (atMemberLimit) {
       setLimitHit({ kind: 'members', count: members.length })
@@ -185,10 +186,6 @@ export default function Matrix() {
   }
 
   function requestAddCategory() {
-    if (atCategoryLimit) {
-      setLimitHit({ kind: 'categories', count: departments.length })
-      return
-    }
     setAddCategoryError(null)
     setShowAddCategory(true)
   }
@@ -239,7 +236,7 @@ export default function Matrix() {
       setShowAddCategory(false)
       toast(`${created.name} added`)
     } catch (err) {
-      handleSaveError(err, setAddCategoryError, 'categories', departments.length)
+      setAddCategoryError(err.message)
     } finally {
       setSavingCategory(false)
     }
@@ -323,9 +320,7 @@ export default function Matrix() {
       setAddSkillFor(null)
       toast(`${created.name} added`)
     } catch (err) {
-      // A new skill can drag a new category in with it, so this can trip the
-      // category limit even though skills themselves aren't limited.
-      handleSaveError(err, setAddSkillError, 'categories', departments.length)
+      setAddSkillError(err.message)
     } finally {
       setSavingSkill(false)
     }
@@ -569,7 +564,7 @@ export default function Matrix() {
                   <button
                     type="button"
                     className="add-category-btn"
-                    title={atCategoryLimit ? `${plan.name} plan limit reached` : 'Add a category'}
+                    title="Add a category"
                     onClick={requestAddCategory}
                   >
                     + Category
@@ -628,7 +623,6 @@ export default function Matrix() {
       {showAddSkill && (
         <AddSkillForm
           departments={departments}
-          canAddCategory={!atCategoryLimit}
           defaultDepartmentId={addSkillFor}
           error={addSkillError}
           saving={savingSkill}

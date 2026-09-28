@@ -40,7 +40,7 @@ export default function Team() {
   const { workspace, canInvite, user, refreshWorkspaces, plan } = useAuth()
   // The matrix rows are already loaded for this workspace, so counting what
   // the plan covers costs nothing.
-  const { members: people, departments } = useWorkspaceData()
+  const { members: people } = useWorkspaceData()
   const [limitHit, setLimitHit] = useState(null)
   const { confirm, toast } = useFeedback()
   const [members, setMembers] = useState([])
@@ -158,24 +158,17 @@ export default function Team() {
             <span className="plan-badge">{plan.name}</span>
           </h2>
           <p className="team-hint">
-            What this workspace can hold. Going over doesn&rsquo;t delete anything — it just stops
-            you adding more.
+            How many people this workspace can hold. Categories, skills and invites aren&rsquo;t
+            limited. Going over doesn&rsquo;t delete anything — it just stops you adding more.
           </p>
           <div className="plan-usage">
             <PlanMeter plan={plan} kind="members" count={people.length} />
-            <PlanMeter plan={plan} kind="categories" count={departments.length} />
           </div>
-          {(limitOf(plan, 'members') !== null || limitOf(plan, 'categories') !== null) && (
+          {limitOf(plan, 'members') !== null && (
             <button
               type="button"
               className="plan-upgrade-btn"
-              onClick={() =>
-                setLimitHit(
-                  limitOf(plan, 'categories') !== null && departments.length >= limitOf(plan, 'categories')
-                    ? { kind: 'categories', count: departments.length }
-                    : { kind: 'members', count: people.length },
-                )
-              }
+              onClick={() => setLimitHit({ kind: 'members', count: people.length })}
             >
               See upgrade options
             </button>

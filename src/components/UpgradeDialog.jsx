@@ -57,7 +57,6 @@ export default function UpgradeDialog({ plan, kind, count, onClose }) {
               {nextLimit === null
                 ? `Unlimited ${label.many}`
                 : `Up to ${nextLimit} ${label.many}`}
-              {next.key === 'plus' && kind === 'categories' ? ', and up to 100 people' : ''}
             </p>
           </div>
         )}
