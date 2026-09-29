@@ -311,3 +311,21 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* Link styled as the panel's primary button — the locked state's only action. */
+.locked-cta {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 7px;
+  border: 1px solid var(--sm-navy);
+  background: var(--sm-navy);
+  color: white;
+  text-decoration: none;
+}
+
+.locked-cta:hover {
+  background: var(--sm-navy-2);
+}

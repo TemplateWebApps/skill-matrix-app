@@ -1,15 +1,19 @@
 /**
  * What each plan allows.
  *
- * One limit, one number: how many people you can put in the matrix. Everything
- * else — categories, skills, invites, the dashboard — is the same on both
- * plans, because a pricing page people have to study is a pricing page people
- * leave.
+ * Two counted limits — people and skills — and one feature, the dashboard.
  *
- * These numbers are a copy of the ones in the plan_limit() function in the
- * database. The database is the real gate — it has to be, because the browser
- * can talk to it directly — and this copy exists only so the app can warn
- * someone before they hit a wall rather than after. Change one, change both.
+ * The two counts are a copy of the numbers in the plan_limit() function in the
+ * database. The database is the real gate there — it has to be, because the
+ * browser can talk to it directly — and this copy exists only so the app can
+ * warn someone before they hit a wall rather than after. Change one, change
+ * both.
+ *
+ * The dashboard flag is different, and it's worth being clear about: it is
+ * enforced HERE AND NOWHERE ELSE. The dashboard is calculated in the page out
+ * of matrix rows the workspace already has every right to read, so there is no
+ * server request to refuse. It stops an honest user, not a determined one.
+ * Making it a real gate means computing insights server-side.
  */
 
 export const PLANS = {
@@ -19,6 +23,8 @@ export const PLANS = {
     price: '$0',
     cadence: 'forever',
     members: 25,
+    skills: 25,
+    dashboard: false,
   },
   unlimited: {
     key: 'unlimited',
@@ -26,6 +32,8 @@ export const PLANS = {
     price: '$9.99',
     cadence: 'per month',
     members: null,
+    skills: null,
+    dashboard: true,
   },
 }
 
@@ -38,8 +46,8 @@ export const UPGRADE_EMAIL = 'templatewebapps@gmail.com'
 // A workspace loaded by an older copy of the app — or before a migration has
 // run — has no plan on it at all. Guessing "free" there would lock people out
 // of their own data over a field that simply wasn't sent, so an unknown plan
-// is treated as unlimited and the database stays the judge.
-const UNKNOWN = { key: 'unknown', name: 'Unknown', members: null }
+// gets everything and the database stays the judge.
+const UNKNOWN = { key: 'unknown', name: 'Unknown', members: null, skills: null, dashboard: true }
 
 export function planOf(workspace) {
   const key = workspace?.plan
@@ -64,6 +72,10 @@ export function remaining(plan, kind, count) {
   return limit === null ? null : Math.max(0, limit - count)
 }
 
+export function canUseDashboard(plan) {
+  return plan?.dashboard !== false
+}
+
 /** The cheapest plan that lifts the limit you just hit. */
 export function upgradeFor(plan, kind) {
   const from = PLAN_ORDER.indexOf(plan?.key)
@@ -78,4 +90,5 @@ export function upgradeFor(plan, kind) {
 
 export const LIMIT_LABEL = {
   members: { one: 'person', many: 'people', thing: 'team member' },
+  skills: { one: 'skill', many: 'skills', thing: 'skill' },
 }

@@ -164,15 +164,23 @@ export default function Matrix() {
       .filter((d) => departmentFilter === 'all' || d.id === departmentFilter)
   }, [departments, skills, departmentFilter])
 
+  // A plan limits how many people and how many skills. Categories and invites
+  // are the same on every plan.
+  const atMemberLimit = isAtLimit(plan, 'members', members.length)
+  const atSkillLimit = isAtLimit(plan, 'skills', skills.length)
+
+  // Every "add a skill" entry point goes through here — the toolbar button,
+  // the + on each category bar, and the + on an empty category — so the wall
+  // is the same wherever you meet it.
   function openAddSkillFor(departmentId) {
+    if (atSkillLimit) {
+      setLimitHit({ kind: 'skills', count: skills.length })
+      return
+    }
     setAddSkillError(null)
     setAddSkillFor(departmentId ?? null)
     setShowAddSkill(true)
   }
-
-  // How many people you can have is the only thing a plan limits. Categories,
-  // skills and invites are the same on every plan.
-  const atMemberLimit = isAtLimit(plan, 'members', members.length)
 
   // Every "add a person" entry point goes through here, so the explanation is
   // the same whether you came from the toolbar or the corner +.
@@ -320,7 +328,7 @@ export default function Matrix() {
       setAddSkillFor(null)
       toast(`${created.name} added`)
     } catch (err) {
-      setAddSkillError(err.message)
+      handleSaveError(err, setAddSkillError, 'skills', skills.length)
     } finally {
       setSavingSkill(false)
     }

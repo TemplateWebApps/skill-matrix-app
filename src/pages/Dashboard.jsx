@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useWorkspaceData } from '../contexts/WorkspaceDataContext'
 import { computeInsights } from '../lib/insights'
 import { levelClass } from '../lib/levels'
+import { PLANS, canUseDashboard } from '../lib/plans'
 import './dashboard.css'
 
 // One decimal everywhere, so a column of levels lines up as 3.0 / 3.5 / 2.0
@@ -56,8 +57,40 @@ function RankedList({ title, hint, rows, emptyText }) {
   )
 }
 
+// Shown instead of the dashboard on a plan that doesn't include it.
+//
+// The tab stays visible in the nav rather than disappearing on Free, because
+// a feature nobody knows exists is a feature nobody upgrades for. So this page
+// has to earn its place: say what's behind it concretely enough to be worth
+// paying for, and not pretend the data is unreachable — it's the same matrix
+// they can already read, just totalled up.
+function DashboardLocked({ plan }) {
+  const paid = PLANS.unlimited
+  return (
+    <div className="dashboard-page">
+      <section className="panel empty-panel">
+        <h2>Insights are part of {paid.name}</h2>
+        <p className="panel-hint">
+          The dashboard totals your matrix up: average proficiency across the team, how much of
+          the grid is filled in, which skills have the widest gap between where people are and
+          where you need them, and who&rsquo;s furthest ahead or behind.
+        </p>
+        <p className="panel-hint">
+          You&rsquo;re on {plan.name}. {paid.name} is {paid.price} {paid.cadence} for the whole
+          team — not per person — and lifts the 25-person and 25-skill limits too.
+        </p>
+        <div className="panel-actions">
+          <Link className="locked-cta" to="/app/team">
+            See plan options
+          </Link>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 export default function Dashboard() {
-  const { workspace } = useAuth()
+  const { workspace, plan } = useAuth()
   // Shares the Matrix tab's already-loaded data instead of fetching its own
   // copy — that second fetch was what made switching tabs feel slow.
   const { departments, skills, members, ratings, loading, reload } = useWorkspaceData()
@@ -90,6 +123,10 @@ export default function Dashboard() {
     if (rpcError) setError(rpcError.message)
     else await load()
   }
+
+  // Checked before the loading state, so a locked plan never sits watching a
+  // spinner for a page it isn't going to get.
+  if (!canUseDashboard(plan)) return <DashboardLocked plan={plan} />
 
   if (loading) return <div className="page-center">Loading insights…</div>
 

@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useFeedback } from '../contexts/FeedbackContext'
 import { useWorkspaceData } from '../contexts/WorkspaceDataContext'
 import { supabase } from '../lib/supabaseClient'
-import { LIMIT_LABEL, limitOf } from '../lib/plans'
+import { LIMIT_LABEL, canUseDashboard, isAtLimit, limitOf } from '../lib/plans'
 import UpgradeDialog from '../components/UpgradeDialog'
 import './team.css'
 
@@ -40,7 +40,7 @@ export default function Team() {
   const { workspace, canInvite, user, refreshWorkspaces, plan } = useAuth()
   // The matrix rows are already loaded for this workspace, so counting what
   // the plan covers costs nothing.
-  const { members: people } = useWorkspaceData()
+  const { members: people, skills } = useWorkspaceData()
   const [limitHit, setLimitHit] = useState(null)
   const { confirm, toast } = useFeedback()
   const [members, setMembers] = useState([])
@@ -158,17 +158,29 @@ export default function Team() {
             <span className="plan-badge">{plan.name}</span>
           </h2>
           <p className="team-hint">
-            How many people this workspace can hold. Categories, skills and invites aren&rsquo;t
-            limited. Going over doesn&rsquo;t delete anything — it just stops you adding more.
+            What this workspace can hold. Categories and invites aren&rsquo;t limited. Going over
+            doesn&rsquo;t delete anything — it just stops you adding more.
           </p>
           <div className="plan-usage">
             <PlanMeter plan={plan} kind="members" count={people.length} />
+            <PlanMeter plan={plan} kind="skills" count={skills.length} />
           </div>
-          {limitOf(plan, 'members') !== null && (
+          {!canUseDashboard(plan) && (
+            <p className="team-hint">
+              The insights dashboard isn&rsquo;t included on {plan.name}.
+            </p>
+          )}
+          {(limitOf(plan, 'members') !== null || limitOf(plan, 'skills') !== null) && (
             <button
               type="button"
               className="plan-upgrade-btn"
-              onClick={() => setLimitHit({ kind: 'members', count: people.length })}
+              onClick={() =>
+                setLimitHit(
+                  isAtLimit(plan, 'skills', skills.length)
+                    ? { kind: 'skills', count: skills.length }
+                    : { kind: 'members', count: people.length },
+                )
+              }
             >
               See upgrade options
             </button>
