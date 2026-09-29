@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { WorkspaceDataProvider } from '../contexts/WorkspaceDataContext'
 
 export default function AppLayout() {
-  const { workspace, workspaces, switchWorkspace, user, signOut } = useAuth()
+  const { workspace, workspaces, switchWorkspace, user, signOut, isAdmin } = useAuth()
 
   return (
     <div className="app-shell">
@@ -36,6 +36,11 @@ export default function AppLayout() {
           <NavLink to="/app/dashboard" className={({ isActive }) => (isActive ? 'active' : '')}>
             Dashboard
           </NavLink>
+          {isAdmin && (
+            <NavLink to="/app/admin" className={({ isActive }) => (isActive ? 'active' : '')}>
+              Admin
+            </NavLink>
+          )}
         </nav>
         <div className="app-user">
           <span>{user?.email}</span>

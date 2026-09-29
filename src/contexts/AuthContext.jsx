@@ -53,6 +53,9 @@ export function AuthProvider({ children }) {
   // Matrix rows that arrived with the startup request, waiting to be picked up
   // by the data provider instead of being fetched a second time.
   const [initialData, setInitialData] = useState(null)
+  // Whether to draw the Admin tab. The database refuses the admin calls on its
+  // own regardless of what this says — see 013.
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // getSession() and onAuthStateChange's INITIAL_SESSION both fire on startup,
   // so the workspace list was being fetched twice, milliseconds apart. Claiming
@@ -68,6 +71,7 @@ export function AuthProvider({ children }) {
       setWorkspaces([])
       setWorkspaceId(null)
       setInitialData(null)
+      setIsAdmin(false)
       return []
     }
     if (!force && loadedForUser.current === userId) return null
@@ -92,6 +96,7 @@ export function AuthProvider({ children }) {
     }
 
     const list = data.workspaces ?? []
+    setIsAdmin(data.is_admin === true)
     setWorkspaces(list)
     setWorkspaceId(data.workspace_id ?? list[0]?.id ?? null)
     // Hand the matrix rows straight to the data provider so it doesn't
@@ -144,6 +149,7 @@ export function AuthProvider({ children }) {
     // What this workspace is allowed to hold. The database is what actually
     // enforces it — this is here so screens can say so before someone tries.
     plan: planOf(workspace),
+    isAdmin,
     canInvite: workspace?.role === 'owner' || workspace?.role === 'admin',
     loading,
     switchWorkspace,

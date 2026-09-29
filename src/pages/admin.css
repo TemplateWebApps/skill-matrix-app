@@ -1,0 +1,173 @@
+.admin-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-header h1 {
+  font-family: var(--heading);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--sm-text);
+}
+
+.admin-sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--sm-text-dim);
+}
+
+.admin-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-search {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid var(--sm-border);
+  border-radius: 7px;
+  background: white;
+  color: var(--sm-text);
+  min-width: 220px;
+}
+
+.admin-page button {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: none;
+  background: var(--sm-navy);
+  color: white;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-page button.secondary {
+  border: 1px solid var(--sm-border);
+  background: white;
+  color: var(--sm-text);
+}
+
+.admin-page button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* The table is wide by nature — let it scroll inside its own box rather than
+   pushing the whole page sideways. */
+.admin-scroll {
+  overflow-x: auto;
+  background: white;
+  border: 1px solid var(--sm-border);
+  border-radius: 10px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-table th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--sm-text-dim);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--sm-border);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #eef1f6;
+  color: var(--sm-text);
+  white-space: nowrap;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-email {
+  font-weight: 600;
+}
+
+.admin-flag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9a5b00;
+  background: #fdf0d5;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.admin-none {
+  color: #98a1b3;
+}
+
+.admin-plan {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.plan-free {
+  background: #eef1f6;
+  color: var(--sm-text-dim);
+}
+
+.plan-unlimited {
+  background: var(--sm-navy);
+  color: white;
+}
+
+.admin-row-action {
+  text-align: right;
+}
+
+.admin-empty {
+  margin: 0;
+  padding: 20px;
+  font-size: 13px;
+  color: var(--sm-text-dim);
+}
+
+.admin-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sm-text-dim);
+}

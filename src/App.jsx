@@ -8,6 +8,7 @@ import AppLayout from './pages/AppLayout'
 import Matrix from './pages/Matrix'
 import Team from './pages/Team'
 import Dashboard from './pages/Dashboard'
+import Admin from './pages/Admin'
 import AcceptInvite from './pages/AcceptInvite'
 import './App.css'
 
@@ -39,6 +40,7 @@ function App() {
         <Route index element={<Matrix />} />
         <Route path="team" element={<Team />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="admin" element={<Admin />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
