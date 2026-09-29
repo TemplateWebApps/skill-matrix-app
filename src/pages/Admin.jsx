@@ -142,9 +142,12 @@ export default function Admin() {
               <th>Email</th>
               <th>Workspace</th>
               <th>Plan</th>
+              <th>Plan since</th>
               <th className="num">People</th>
               <th className="num">Skills</th>
-              <th className="num">Rated</th>
+              <th className="num" title="Cells with a current level set, out of the whole grid">
+                Rated
+              </th>
               <th>Signed up</th>
               <th>Last seen</th>
               <th />
@@ -165,9 +168,37 @@ export default function Admin() {
                     </span>
                   )}
                 </td>
+                <td
+                  title={
+                    r.plan_since
+                      ? `${exact(r.plan_since)}${r.plan_changes > 1 ? ` · ${r.plan_changes} plan changes` : ''}`
+                      : 'No plan change recorded'
+                  }
+                >
+                  {r.workspace_id &&
+                    (r.plan_since ? (
+                      <>
+                        {ago(r.plan_since)}
+                        {r.plan_changes > 1 && <span className="admin-flag">×{r.plan_changes}</span>}
+                      </>
+                    ) : (
+                      <span className="admin-none">—</span>
+                    ))}
+                </td>
                 <td className="num">{r.people ?? '—'}</td>
                 <td className="num">{r.skills ?? '—'}</td>
-                <td className="num">{r.ratings_filled ?? '—'}</td>
+                {/* Out of the whole grid, because 62 means nothing without
+                    knowing whether the grid holds 70 cells or 700. */}
+                <td className="num" title={`${r.ratings_filled ?? 0} of ${(r.people ?? 0) * (r.skills ?? 0)} cells filled in`}>
+                  {r.workspace_id ? (
+                    <>
+                      {r.ratings_filled ?? 0}
+                      <span className="admin-of"> / {(r.people ?? 0) * (r.skills ?? 0)}</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td title={exact(r.signed_up)}>{ago(r.signed_up) ?? '—'}</td>
                 <td title={exact(r.last_sign_in)} className={r.last_sign_in ? '' : 'admin-none'}>
                   {ago(r.last_sign_in) ?? 'never'}
