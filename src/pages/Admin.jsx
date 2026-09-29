@@ -28,6 +28,21 @@ export default function Admin() {
   const [error, setError] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [query, setQuery] = useState('')
+  // The account whose audit trail is open, and the trail itself once fetched.
+  const [detailFor, setDetailFor] = useState(null)
+  const [detail, setDetail] = useState(null)
+  const [detailError, setDetailError] = useState(null)
+
+  async function openDetail(row) {
+    setDetailFor(row)
+    setDetail(null)
+    setDetailError(null)
+    const { data, error: rpcError } = await supabase.rpc('admin_workspace_history', {
+      p_workspace_id: row.workspace_id,
+    })
+    if (rpcError) setDetailError(rpcError.message)
+    else setDetail(data ?? [])
+  }
 
   // Starts with the await on purpose: nothing in here runs synchronously when
   // the effect below calls it, which is what keeps this out of the
@@ -142,13 +157,15 @@ export default function Admin() {
               <th>Email</th>
               <th>Workspace</th>
               <th>Plan</th>
-              <th>Plan since</th>
+              <th>Signed up</th>
+              <th title="When this workspace last became a paying one. Blank means never.">
+                Upgraded
+              </th>
               <th className="num">People</th>
               <th className="num">Skills</th>
               <th className="num" title="Cells with a current level set, out of the whole grid">
                 Rated
               </th>
-              <th>Signed up</th>
               <th>Last seen</th>
               <th />
             </tr>
@@ -168,17 +185,19 @@ export default function Admin() {
                     </span>
                   )}
                 </td>
+                <td title={exact(r.signed_up)}>{ago(r.signed_up) ?? '—'}</td>
                 <td
                   title={
-                    r.plan_since
-                      ? `${exact(r.plan_since)}${r.plan_changes > 1 ? ` · ${r.plan_changes} plan changes` : ''}`
-                      : 'No plan change recorded'
+                    r.upgraded_at
+                      ? `${exact(r.upgraded_at)}${r.plan_changes > 1 ? ` · ${r.plan_changes} plan changes` : ''}`
+                      : 'Never on a paid plan'
                   }
                 >
                   {r.workspace_id &&
-                    (r.plan_since ? (
+                    (r.upgraded_at ? (
                       <>
-                        {ago(r.plan_since)}
+                        {ago(r.upgraded_at)}
+                        {/* The mark that says this date isn't the whole story. */}
                         {r.plan_changes > 1 && <span className="admin-flag">×{r.plan_changes}</span>}
                       </>
                     ) : (
@@ -199,24 +218,34 @@ export default function Admin() {
                     '—'
                   )}
                 </td>
-                <td title={exact(r.signed_up)}>{ago(r.signed_up) ?? '—'}</td>
                 <td title={exact(r.last_sign_in)} className={r.last_sign_in ? '' : 'admin-none'}>
                   {ago(r.last_sign_in) ?? 'never'}
                 </td>
                 <td className="admin-row-action">
                   {r.workspace_id && (
-                    <button
-                      type="button"
-                      className="secondary"
-                      disabled={busyId === r.workspace_id}
-                      onClick={() => setPlan(r, r.plan === 'unlimited' ? 'free' : 'unlimited')}
-                    >
-                      {busyId === r.workspace_id
-                        ? '…'
-                        : r.plan === 'unlimited'
-                          ? 'Move to Free'
-                          : 'Upgrade'}
-                    </button>
+                    <>
+                      {/* Always available, but only lit when there's a story
+                          worth reading — more than one plan change. */}
+                      <button
+                        type="button"
+                        className={r.plan_changes > 1 ? 'admin-detail-btn is-lit' : 'admin-detail-btn'}
+                        onClick={() => openDetail(r)}
+                      >
+                        Details
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={busyId === r.workspace_id}
+                        onClick={() => setPlan(r, r.plan === 'unlimited' ? 'free' : 'unlimited')}
+                      >
+                        {busyId === r.workspace_id
+                          ? '…'
+                          : r.plan === 'unlimited'
+                            ? 'Move to Free'
+                            : 'Upgrade'}
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -227,6 +256,76 @@ export default function Admin() {
           <p className="admin-empty">{query ? 'Nothing matches that.' : 'No accounts yet.'}</p>
         )}
       </div>
+
+      {detailFor && (
+        <div className="modal-backdrop" onClick={() => setDetailFor(null)}>
+          <div className="modal-card admin-detail" onClick={(e) => e.stopPropagation()}>
+            <h2>{detailFor.email}</h2>
+            <dl className="admin-detail-facts">
+              <div>
+                <dt>Workspace</dt>
+                <dd>{detailFor.workspace_name}</dd>
+              </div>
+              <div>
+                <dt>Role</dt>
+                <dd>{detailFor.role ?? '—'}</dd>
+              </div>
+              <div>
+                <dt>Signed up</dt>
+                <dd>{exact(detailFor.signed_up)}</dd>
+              </div>
+              <div>
+                <dt>Last seen</dt>
+                <dd>{exact(detailFor.last_sign_in)}</dd>
+              </div>
+              <div>
+                <dt>Current plan</dt>
+                <dd>{detailFor.plan === 'unlimited' ? 'Unlimited' : 'Free'}</dd>
+              </div>
+              <div>
+                <dt>Built</dt>
+                <dd>
+                  {detailFor.people} people · {detailFor.skills} skills ·{' '}
+                  {detailFor.ratings_filled} rated
+                </dd>
+              </div>
+            </dl>
+
+            <h3 className="admin-detail-h">Account history</h3>
+            {detailError && <p className="auth-error">{detailError}</p>}
+            {!detail && !detailError && <p className="admin-none">Loading…</p>}
+            {detail && (
+              <ol className="admin-trail">
+                {detail.map((e, i) => (
+                  <li key={i} className={e.is_created ? 'is-created' : ''}>
+                    <span className="trail-when">{exact(e.changed_at)}</span>
+                    <span className="trail-what">
+                      {e.is_created ? (
+                        <>
+                          Workspace created on{' '}
+                          <strong>{e.to_plan === 'unlimited' ? 'Unlimited' : 'Free'}</strong>
+                        </>
+                      ) : (
+                        <>
+                          <strong>{e.from_plan === 'unlimited' ? 'Unlimited' : 'Free'}</strong> →{' '}
+                          <strong>{e.to_plan === 'unlimited' ? 'Unlimited' : 'Free'}</strong>
+                          {e.changed_by && <span className="trail-by">by {e.changed_by}</span>}
+                        </>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            <div className="modal-actions">
+              <button type="button" className="secondary" onClick={() => setDetailFor(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <p className="admin-note">
         Passwords aren&rsquo;t shown because they can&rsquo;t be — they&rsquo;re hashed, and
